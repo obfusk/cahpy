@@ -1,105 +1,115 @@
 <!doctype html>
-<form id="form" method="post">
-  <input type="hidden" name="game" value="{{ game }}" />
-  <input type="hidden" name="name" value="{{ name }}" />
-  Game: {{ game }}
-  <br/>
-  Players: {{ players }}
-  <br/>
-  Your name: {{ name }}
-  {% if you_czar %}
-    <br/>
-    <strong>You're the czar!</strong>
-  {% endif %}
-  <br/>
-  {% if card is not none %}
-    <br/>
-    Current black card: {{ black[card]|safe }}
-    <br/>
-  {% endif %}
-  {% if msg %}
-    <br/>
-    {{ msg }}
-    <br/>
-  {% endif %}
-  <br/>
-{% if cur["czar"] is none %}
-  {% set waiting = true %}
-  <noscript>
-    <button id="refresh">Refresh!</button>
-  </noscript>
-  <button name="start" value="start">Start!</button>
-  <br/>
-{% else %}
-  {% if you_czar %}
-    {% if complete %}
-      Choose from these player answers:
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    <title>cahpy</title>
+  </head>
+  <body>
+    <form id="form" method="post">
+      <input type="hidden" name="game" value="{{ game }}" />
+      <input type="hidden" name="name" value="{{ name }}" />
+      Game: {{ game }}
       <br/>
-      {% for a in answers %}
-        {% for c in a %}
-          <input type="radio" id="card{{ c }}" name="card" value="{{ c }}">
-          <label for="card{{ c }}">{{ white[c]|safe }}</label>
+      Players: {{ players }}
+      <br/>
+      Your name: {{ name }}
+      {% if you_czar %}
+        <br/>
+        <strong>You're the czar!</strong>
+      {% endif %}
+      <br/>
+      {% if card is not none %}
+        <br/>
+        Current black card: {{ black[card]|safe }}
+        <br/>
+      {% endif %}
+      {% if msg %}
+        <br/>
+        {{ msg }}
+        <br/>
+      {% endif %}
+      <br/>
+    {% if cur["czar"] is none %}
+      {% set waiting = true %}
+      <noscript>
+        <button id="refresh">Refresh!</button>
+      </noscript>
+      <button name="start" value="start">Start!</button>
+      <br/>
+    {% else %}
+      {% if you_czar %}
+        {% if complete %}
+          Choose from these player answers:
           <br/>
-        {% endfor %}
-      {% endfor %}
-      <button>Choose!</button>
-      <br/>
-    {% else %}
-      {% set waiting = true %}
-      Waiting for players...
-      <br/>
-      <noscript>
-        <br/>
-        <button id="refresh">Refresh!</button>
-        <br/>
-      </noscript>
+          {% for a in answers %}
+            {% for c in a %}
+              <input type="radio" id="card{{ c }}" name="card" value="{{ c }}">
+              <label for="card{{ c }}">{{ white[c]|safe }}</label>
+              <br/>
+            {% endfor %}
+          {% endfor %}
+          <button>Choose!</button>
+          <br/>
+        {% else %}
+          {% set waiting = true %}
+          Waiting for players...
+          <br/>
+          <noscript>
+            <br/>
+            <button id="refresh">Refresh!</button>
+            <br/>
+          </noscript>
+        {% endif %}
+      {% else %}
+        {% if complete %}
+          {% set waiting = true %}
+          Waiting for czar...
+          <br/>
+          <noscript>
+            <br/>
+            <button id="refresh">Refresh!</button>
+            <br/>
+          </noscript>
+        {% else %}
+          Choose from your white cards:
+          <br/>
+          {% for c in cur["cards"][name] %}
+            <input type="radio" id="card{{ c }}" name="card" value="{{ c }}">
+            <label for="card{{ c }}">{{ white[c]|safe }}</label>
+            <br/>
+          {% endfor %}
+          <button>Choose!</button>
+          <br/>
+        {% endif %}
+      {% endif %}
     {% endif %}
-  {% else %}
-    {% if complete %}
-      {% set waiting = true %}
-      Waiting for czar...
       <br/>
-      <noscript>
-        <br/>
-        <button id="refresh">Refresh!</button>
-        <br/>
-      </noscript>
-    {% else %}
-      Choose from your white cards:
-      <br/>
-      {% for c in cur["cards"][name] %}
-        <input type="radio" id="card{{ c }}" name="card" value="{{ c }}">
-        <label for="card{{ c }}">{{ white[c]|safe }}</label>
-        <br/>
-      {% endfor %}
-      <button>Choose!</button>
-      <br/>
-    {% endif %}
-  {% endif %}
-{% endif %}
-  <br/>
-  <hr/>
-  <button name="restart" value="restart">Restart!</button>
-</form>
-{% if waiting %}
-  <script>
-    window.onload = () => {
-      const tick = {{ tick }}
-      const f = () => {
-        const r = new XMLHttpRequest()
-        r.addEventListener("load", e => {
-          if (r.status != 200) { return }
-          const t = JSON.parse(r.responseText).tick
-          if (t > tick) {
-            document.getElementById("form").submit()
-          } else {
-            setTimeout(f, 1000)
+      <hr/>
+      <button name="restart" value="restart">Restart!</button>
+    </form>
+    {% if waiting %}
+      <script>
+        window.onload = () => {
+          const tick = {{ tick }}
+          const f = () => {
+            const r = new XMLHttpRequest()
+            r.addEventListener("load", e => {
+              if (r.status != 200) { return }
+              const t = JSON.parse(r.responseText).tick
+              if (t > tick) {
+                document.getElementById("form").submit()
+              } else {
+                setTimeout(f, 1000)
+              }
+            })
+            r.open("GET", "/status/{{ game }}")
+            r.send()
           }
-        })
-        r.open("GET", "/status/{{ game }}")
-        r.send()
-      }
-      setTimeout(f, 1000)
-    }
-  </script>
-{% endif %}
+          setTimeout(f, 1000)
+        }
+      </script>
+    {% endif %}
+  </body>
+</html>
