@@ -166,9 +166,9 @@ def status(game):
 def play():
   game, name = request.form.get("game"), request.form.get("name")
   card, answ = request.form.get("card0"), request.form.get("answ")
-  if not valid_ident(game): raise InvalidParam("game")
-  if not valid_ident(name): raise InvalidParam("name")
   try:
+    if not valid_ident(game): raise InvalidParam("game")
+    if not valid_ident(name): raise InvalidParam("name")
     if request.form.get("restart"): restart_game(game)
     new = init_game(game, name)
     if new: update_game(game, new)
@@ -191,5 +191,8 @@ def play():
     return render_template("late.html", game = game)
   except OutOfCards:
     return game_over(current_game(game), game, name)
+  except InvalidParam as e:
+    error = "invalid parameter: {}".format(e.args[0])
+    return render_template("error.html", error = error), 400
 
 # vim: set tw=70 sw=2 sts=2 et fdm=marker :
