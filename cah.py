@@ -16,7 +16,7 @@
 # NB: only works single-threaded!
 
 # TODO:
-# * add more decks, select options
+# * select decks, options
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
@@ -31,14 +31,19 @@ RANDOM  = 1
 CARDS   = 10
 POLL    = 1000
 
+PACKS   = "blue fantasy geek green intl red science sf uk us".split()
+
 class InProgress(RuntimeError): pass
 class OutOfCards(RuntimeError): pass
 class InvalidParam(RuntimeError): pass
 
 def blanks(s): return max(1, s.count("____"))
 
-with open("black") as f: black = list(f)
-with open("white") as f: white = list(f)
+black, white = set(), set()
+for pack in PACKS:
+  with open("black-" + pack) as f: black |= set(f)
+  with open("white-" + pack) as f: white |= set(f)
+black, white = list(black), list(white)
 
 # global state
 games = {}
