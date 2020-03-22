@@ -107,9 +107,11 @@ def start_round(cur, game):
     rand_ans = rand_ans, answers = {}, msg = None, prev = None
   )
 
-def play_cards(cur, name, cards):
-  more, wht = take_random(cur["wht"], len(cards), empty_ok = True)
-  hand = (cur["cards"][name] - set(cards)) | more
+def play_cards(cur, name, cards, discard = None):
+  old = set(cards)
+  if discard is not None: old.add(discard)
+  new, wht = take_random(cur["wht"], len(old), empty_ok = True)
+  hand = (cur["cards"][name] - old) | new
   return dict(
     cards   = { **cur["cards"], name: hand },
     answers = { **cur["answers"], name: cards },
@@ -191,8 +193,13 @@ def play():
       if not all( x.isdigit() for x in cds ): raise err
       cards = list(map(int, cds))
       if len(set(cards)) != cur["blanks"]: raise err
-      update_game(game, choose_answer(cur, cards) if answ else
-                        play_cards(cur, name, cards))
+      if answ:
+        new = choose_answer(cur, cards)
+      else:
+        rm = request.form.get("cardd")
+        if rm and not rm.isdigit(): raise InvalidParam("cardd")
+        new = play_cards(cur, name, cards, int(rm) if rm else None)
+      update_game(game, new)
     return render_template("play.html", **data(cur, game, name))
   except InProgress:
     return render_template("late.html", game = game)

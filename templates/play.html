@@ -56,12 +56,12 @@
       <span class="black">{{ black[card]|safe }}</span>
       <br/>
     {% endmacro %}
-    {% macro whitecards(i, multiple = False) %}
-      White card{% if multiple %} #{{ i + 1 }}{% endif %}:
+    {% macro whitecards(i, info = "", cls = "radio") %}
+      White card{{ info }}:
       <br/>
       {% for c in cur["cards"][name] %}
         <input type="radio" id="card{{ i }}-{{ c }}"
-          name="card{{ i }}" value="{{ c }}" class="radio">
+          name="card{{ i }}" value="{{ c }}" class="{{ cls }}">
         <label for="card{{ i }}-{{ c }}" class="white">
           {{ white[c]|safe }}
         </label>
@@ -144,14 +144,17 @@
         {% else %}
           {% set multiple = cur["blanks"] > 1 %}
           {% for i in range(cur["blanks"]) %}
-            {{ whitecards(i, multiple) }}
+            {{ whitecards(i, " #{}".format(i+1) if multiple else "") }}
           {% endfor %}
+          {{ whitecards("d", " to discard (optional)", "") }}
           <script>
             document.getElementById("form").onsubmit = e => {
-              const r = Array.from(document.getElementsByClassName("radio"))
-                        .filter(x => x.checked).map(x => x.value)
-              if ((new Set(r)).size != {{ cur["blanks"] }} ) {
-                alert("Please select {{ cur["blanks"] }}.")
+              const b = {{ cur["blanks"] }}
+              const r = document.getElementsByClassName("radio")
+              const s = (new Set(Array.from(r).filter(x => x.checked)
+                                 .map(x => x.value))).size
+              if (s != b) {
+                alert(`Please select ${b} (different) card(s).`)
                 e.preventDefault()
               }
             }
