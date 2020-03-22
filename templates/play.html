@@ -23,6 +23,10 @@
     </style>
   </head>
   <body>
+    <form id="form0" method="post">
+      <input type="hidden" name="game" value="{{ game }}" />
+      <input type="hidden" name="name" value="{{ name }}" />
+    </form>
     <form id="form" method="post">
       <input type="hidden" name="game" value="{{ game }}" />
       <input type="hidden" name="name" value="{{ name }}" />
@@ -52,7 +56,7 @@
     {% if card is none %}
       {% set waiting = true %}
       <noscript>
-        <button id="refresh">Refresh!</button>
+        <button id="refresh" form="form0">Refresh!</button>
       </noscript>
       <button name="start" value="start">New round!</button>
       <br/>
@@ -80,18 +84,18 @@
           <br/>
           <noscript>
             <br/>
-            <button id="refresh">Refresh!</button>
+            <button id="refresh" form="form0">Refresh!</button>
             <br/>
           </noscript>
         {% endif %}
       {% else %}
-        {% if complete %}
+        {% if name in cur["answers"] %}
           {% set waiting = true %}
           Waiting for czar...
           <br/>
           <noscript>
             <br/>
-            <button id="refresh">Refresh!</button>
+            <button id="refresh" form="form0">Refresh!</button>
             <br/>
           </noscript>
         {% else %}
@@ -125,7 +129,7 @@
     {% endif %}
       <br/>
       <hr/>
-      <button name="restart" value="restart">Restart!</button>
+      <button name="restart" value="restart" form="form0">Restart!</button>
     </form>
     {% if waiting %}
       <script>
