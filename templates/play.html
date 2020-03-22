@@ -4,13 +4,30 @@
     <meta charset="UTF-8"/>
     <meta name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    <title>cahpy</title>
+    <title>cahpy | {{ game }} | {{ name }}</title>
+    <style>
+      .black {
+        color: white;
+        background-color: black;
+        border: 1px solid white;
+      }
+      .white {
+        color: black;
+        background-color: white;
+        border: 1px solid black;
+      }
+      .black, .white {
+        display: inline-block;
+        padding: 0.2em;
+      }
+    </style>
   </head>
   <body>
     <form id="form" method="post">
       <input type="hidden" name="game" value="{{ game }}" />
       <input type="hidden" name="name" value="{{ name }}" />
-      Game: {{ game }}
+      Game:
+      <a href="/?game={{ game }}">{{ game }}</a>
       <br/>
       Players: {{ players }}
       <br/>
@@ -22,7 +39,8 @@
       <br/>
       {% if card is not none %}
         <br/>
-        Current black card: {{ black[card]|safe }}
+        Black card:
+        <span class="black">{{ black[card]|safe }}</span>
         <br/>
       {% endif %}
       {% if msg %}
@@ -36,20 +54,24 @@
       <noscript>
         <button id="refresh">Refresh!</button>
       </noscript>
-      <button name="start" value="start">Start!</button>
+      <button name="start" value="start">New round!</button>
       <br/>
     {% else %}
       {% if you_czar %}
         {% if complete %}
-          Choose from these player answers:
+          Answers:
           <br/>
           {% for a in answers %}
-            {% for c in a %}
-              <input type="radio" id="card{{ c }}" name="card" value="{{ c }}">
-              <label for="card{{ c }}">{{ white[c]|safe }}</label>
-              <br/>
-            {% endfor %}
+            <input type="radio" id="answ{{ loop.index }}"
+              name="answ" value="{{ a|join(",") }}">
+            <label for="answ{{ loop.index }}">
+              {% for c in a %}
+                <span class="white">{{ white[c]|safe }}</span>
+              {% endfor %}
+            </label>
+            <br/>
           {% endfor %}
+          <br/>
           <button>Choose!</button>
           <br/>
         {% else %}
@@ -73,13 +95,29 @@
             <br/>
           </noscript>
         {% else %}
-          Choose from your white cards:
-          <br/>
-          {% for c in cur["cards"][name] %}
-            <input type="radio" id="card{{ c }}" name="card" value="{{ c }}">
-            <label for="card{{ c }}">{{ white[c]|safe }}</label>
+          {% for i in range(cur["blanks"]) %}
+            White card{% if cur["blanks"] > 1 %} #{{ i + 1 }}{% endif %}:
+            <br/>
+            {% for c in cur["cards"][name] %}
+              <input type="radio" id="card{{ i }}-{{ c }}"
+                name="card{{ i }}" value="{{ c }}" class="radio">
+              <label for="card{{ i }}-{{ c }}" class="white">
+                {{ white[c]|safe }}
+              </label>
+              <br/>
+            {% endfor %}
             <br/>
           {% endfor %}
+          <script>
+            document.getElementById("form").onsubmit = e => {
+              const r = Array.from(document.getElementsByClassName("radio"))
+                        .filter(x => x.checked).map(x => x.value)
+              if ((new Set(r)).size != {{ cur["blanks"] }} ) {
+                alert("Please select {{ cur["blanks"] }}.")
+                e.preventDefault()
+              }
+            }
+          </script>
           <button>Choose!</button>
           <br/>
         {% endif %}
@@ -101,13 +139,13 @@
               if (t > tick) {
                 document.getElementById("form").submit()
               } else {
-                setTimeout(f, 1000)
+                setTimeout(f, {{ POLL }})
               }
             })
             r.open("GET", "/status/{{ game }}")
             r.send()
           }
-          setTimeout(f, 1000)
+          setTimeout(f, {{ POLL }})
         }
       </script>
     {% endif %}
