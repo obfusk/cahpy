@@ -77,7 +77,7 @@ def init_game(game, name):
       blk = set(range(len(black))), wht = set(range(len(white))),
       players = [], cards = {}, points = {}, czar = None,
       card = None, blanks = None, rand_ans = [], answers = {},
-      msg = None, tick = 0
+      msg = None, prev = None, tick = 0
     )
   cur = current_game(game)
   if name not in cur["players"]:
@@ -104,7 +104,7 @@ def start_round(cur, game):
     raise OutOfCards("empty hand")  # some players w/o cards -> done
   return dict(
     czar = czar, card = card, blk = blk, wht = wht, blanks = b,
-    rand_ans = rand_ans, answers = {}, msg = None
+    rand_ans = rand_ans, answers = {}, msg = None, prev = None
   )
 
 def play_cards(cur, name, cards):
@@ -119,30 +119,35 @@ def play_cards(cur, name, cards):
 def choose_answer(cur, cards):
   winner = ([ k for k, v in cur["answers"].items()
                 if set(cards) == set(v) ] + [None])[0]
+  new = dict(card = None, prev = dict(
+    card = cur["card"], answers = answer_data(cur)
+  ))
   if winner:
     return dict(
       points = { **cur["points"], winner: cur["points"][winner] + 1 },
-      msg = "Winner: {}.".format(winner), card = None
+      msg = "Winner: {}.".format(winner), **new
     )
   else:
-    return dict(msg = "Randomness won.", card = None)
+    return dict(msg = "Randomness won.", **new)
 
 def player_data(cur):
   return ", ".join( p + ("*" if cur["czar"] == i else "")
-                      + " (" + str(cur["points"].get(p, 0)) + ")"
+                      + " (" + str(cur["points"][p]) + ")"
                       for i, p in enumerate(sorted(cur["players"])) )
 
+def answer_data(cur):
+  ans = cur["rand_ans"] + list(cur["answers"].values())
+  random.shuffle(ans)
+  return ans
+
 def data(cur, game, name):
-  ans, done = None, len(cur["answers"]) == len(cur["players"]) - 1
-  if done:
-    ans = cur["rand_ans"] + list(cur["answers"].values())
-    random.shuffle(ans)
+  done = len(cur["answers"]) == len(cur["players"]) - 1
   return dict(
     cur = cur, game = game, name = name, players = player_data(cur),
     you_czar = cur["czar"] == cur["players"].index(name),
-    card = cur["card"], answers = ans, complete = done,
-    msg = cur["msg"], tick = cur["tick"],
-    black = black, white = white, POLL = POLL
+    card = cur["card"], answers = answer_data(cur) if done else None,
+    complete = done, msg = cur["msg"], prev = cur["prev"],
+    tick = cur["tick"], black = black, white = white, POLL = POLL
   )
 
 def game_over(cur, game, name):

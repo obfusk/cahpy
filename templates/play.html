@@ -34,13 +34,65 @@
     </style>
   </head>
   <body>
-    <form id="form0" method="post">
-      <input type="hidden" name="game" value="{{ game }}" />
-      <input type="hidden" name="name" value="{{ name }}" />
+    {% macro formstart(id) %}
+      <form id="{{ id }}" method="post">
+        <input type="hidden" name="game" value="{{ game }}" />
+        <input type="hidden" name="name" value="{{ name }}" />
+    {% endmacro %}
+    {% macro refreshbtn() %}
+      <button id="refresh" form="form0">Refresh!</button>
+    {% endmacro %}
+    {% macro waitingfor(who) %}
+      Waiting for {{ who }}...
+      <br/>
+      <noscript>
+        <br/>
+        {{ refreshbtn() }}
+        <br/>
+      </noscript>
+    {% endmacro %}
+    {% macro blackcard(card) %}
+      Black card:
+      <span class="black">{{ black[card]|safe }}</span>
+      <br/>
+    {% endmacro %}
+    {% macro whitecards(i, multiple = False) %}
+      White card{% if multiple %} #{{ i + 1 }}{% endif %}:
+      <br/>
+      {% for c in cur["cards"][name] %}
+        <input type="radio" id="card{{ i }}-{{ c }}"
+          name="card{{ i }}" value="{{ c }}" class="radio">
+        <label for="card{{ i }}-{{ c }}" class="white">
+          {{ white[c]|safe }}
+        </label>
+        <br/>
+      {% endfor %}
+      <br/>
+    {% endmacro %}
+    {% macro answerlist(answers, radio = True) %}
+      Answers:
+      <br/>
+      {% for a in answers %}
+        {% if radio %}
+          <input type="radio" id="answ{{ loop.index }}"
+            name="answ" value="{{ a|join(",") }}">
+          <label for="answ{{ loop.index }}">
+        {% else %}
+          »
+        {% endif %}
+          {% for c in a %}
+            <span class="white">{{ white[c]|safe }}</span>
+          {% endfor %}
+        {% if radio %}
+          </label>
+        {% endif %}
+        <br/>
+      {% endfor %}
+      <br/>
+    {% endmacro %}
+    {{ formstart("form0") }}
     </form>
-    <form id="form" method="post">
-      <input type="hidden" name="game" value="{{ game }}" />
-      <input type="hidden" name="name" value="{{ name }}" />
+    {{ formstart("form") }}
       Game:
       <a href="/?game={{ game }}">{{ game }}</a>
       <br/>
@@ -54,9 +106,7 @@
       <br/>
       {% if card is not none %}
         <br/>
-        Black card:
-        <span class="black">{{ black[card]|safe }}</span>
-        <br/>
+        {{ blackcard(card) }}
       {% endif %}
       {% if msg %}
         <br/>
@@ -66,62 +116,35 @@
       <br/>
     {% if card is none %}
       {% set waiting = true %}
+      {% if prev is not none %}
+        {{ blackcard(prev["card"]) }}
+        <br/>
+        {{ answerlist(prev["answers"], False) }}
+      {% endif %}
       <noscript>
-        <button id="refresh" form="form0">Refresh!</button>
+        {{ refreshbtn() }}
       </noscript>
       <button name="start" value="start">New round!</button>
       <br/>
     {% else %}
       {% if you_czar %}
         {% if complete %}
-          Answers:
-          <br/>
-          {% for a in answers %}
-            <input type="radio" id="answ{{ loop.index }}"
-              name="answ" value="{{ a|join(",") }}">
-            <label for="answ{{ loop.index }}">
-              {% for c in a %}
-                <span class="white">{{ white[c]|safe }}</span>
-              {% endfor %}
-            </label>
-            <br/>
-          {% endfor %}
-          <br/>
+          {{ answerlist(answers) }}
           <button>Choose!</button>
           <br/>
         {% else %}
           {% set waiting = true %}
-          Waiting for players...
-          <br/>
-          <noscript>
-            <br/>
-            <button id="refresh" form="form0">Refresh!</button>
-            <br/>
-          </noscript>
+          {{ waitingfor("players") }}
         {% endif %}
       {% else %}
         {% if name in cur["answers"] %}
           {% set waiting = true %}
-          Waiting for czar...
-          <br/>
-          <noscript>
-            <br/>
-            <button id="refresh" form="form0">Refresh!</button>
-            <br/>
-          </noscript>
+          {{ answerlist(answers, False) }}
+          {{ waitingfor("czar") }}
         {% else %}
+          {% set multiple = cur["blanks"] > 1 %}
           {% for i in range(cur["blanks"]) %}
-            White card{% if cur["blanks"] > 1 %} #{{ i + 1 }}{% endif %}:
-            <br/>
-            {% for c in cur["cards"][name] %}
-              <input type="radio" id="card{{ i }}-{{ c }}"
-                name="card{{ i }}" value="{{ c }}" class="radio">
-              <label for="card{{ i }}-{{ c }}" class="white">
-                {{ white[c]|safe }}
-              </label>
-              <br/>
-            {% endfor %}
-            <br/>
+            {{ whitecards(i, multiple) }}
           {% endfor %}
           <script>
             document.getElementById("form").onsubmit = e => {
@@ -174,6 +197,7 @@
         <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPLv3+</a>
         » Cards License:
         <a href="https://creativecommons.org/licenses/by-nc-sa/2.0/">CC BY-NC-SA</a>
+        » <a href="/">New Game</a>
       </small>
     </footer>
   </body>
