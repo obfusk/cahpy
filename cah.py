@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-21
+# Date        : 2020-03-22
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -16,9 +16,10 @@
 # NB: only works single-threaded!
 
 # TODO:
-# * other cards
+# * add more decks, select options
 # * better game over handling
-# * websocket?
+# * better error messages
+# * use websocket instead of polling
 
 import random, secrets
 
@@ -30,8 +31,8 @@ RANDOM  = 1
 CARDS   = 10
 POLL    = 1000
 
+class InProgress(RuntimeError): pass
 class OutOfCards(RuntimeError): pass
-
 class InvalidParam(RuntimeError): pass
 
 def blanks(s): return max(1, s.count("____"))
@@ -42,84 +43,104 @@ with open("white") as f: white = list(f)
 # global state
 games = {}
 
+def current_game(game):
+  return games[game]
+
+def restart_game(game):
+  del games[game]
+
+def update_game(game, new):
+  cur = current_game(game)
+  cur.update(new, tick = cur["tick"] + 1)
+
 def valid_ident(s):
   return s and s.isprintable() and all( not c.isspace() for c in s )
 
 def get_random1(x):
   return random.sample(x, 1)[0]
 
-# NB: takes min(n, len(s))
+# NB: takes min(n, len)
 def take_random(s, n, empty_ok = False, less_ok = True):
-  if not less_ok and len(s) < n: raise OutOfCards()
-  if not s and not empty_ok: raise OutOfCards()
+  if not less_ok and len(s) < n: raise OutOfCards("not enough")
+  if not s and not empty_ok: raise OutOfCards("empty")
   t = set(random.sample(s, min(n, len(s))))
-  s -= t
-  return t
+  return t, s - t
 
 def init_game(game, name):
   if game not in games:
     games[game] = dict(
-      black = set(range(len(black))), white = set(range(len(white))),
+      blk = set(range(len(black))), wht = set(range(len(white))),
       players = set(), cards = {}, points = {}, czar = None,
       card = None, blanks = None, rand_ans = [], answers = {},
       msg = None, tick = 0
     )
-  cur = games[game]
+  cur = current_game(game)
   if name not in cur["players"]:
-    if cur["card"]: return None   # in progress -> can't join
-    cur["players"].add(name)
-    cur["cards"][name] = take_random(cur["white"], CARDS)
-    cur["tick"] += 1
-  return cur
+    if cur["card"]: raise InProgress()  # in progress -> can't join
+    hand, wht = take_random(cur["wht"], CARDS, less_ok = False)
+    return dict(
+      players = cur["players"] | set([name]),
+      cards   = { **cur["cards"], name: hand },
+      points  = { **cur["points"], name: 0 },
+      wht     = wht
+    )
+  return None
 
 def start_round(cur, game):
-  cur["czar"]     = get_random1(cur["players"] - set([cur["czar"]]))
-  cur["card"]     = take_random(cur["black"], 1).pop()
-  cur["blanks"]   = b = blanks(black[cur["card"]])
-  cur["rand_ans"] = [
-    take_random(cur["white"], b, less_ok = False)
-      for _ in range(min(RANDOM, len(cur["white"]) // b))
-  ]
-  cur["answers"]  = {}
-  cur["msg"]      = None
-  cur["tick"]    += 1
-  if not all( len(c) > b for c in cur["cards"].values() ):
-    return False                  # some players w/o cards -> done
-  return True
+  czar        = get_random1(cur["players"] - set([cur["czar"]]))
+  cards, blk  = take_random(cur["blk"], 1); card = cards.pop()
+  b, wht      = blanks(black[card]), cur["wht"]
+  rand_ans    = []
+  for _ in range(min(RANDOM, len(wht) // b)):
+    ans, wht = take_random(wht, b, less_ok = False)
+    rand_ans.append(ans)
+  if any( len(c) < b for c in cur["cards"].values() ):
+    raise OutOfCards("empty hand")  # some players w/o cards -> done
+  return dict(
+    czar = czar, card = card, blk = blk, wht = wht, blanks = b,
+    rand_ans = rand_ans, answers = {}, msg = None
+  )
 
 def play_cards(cur, name, cards):
-  cur["cards"][name]  -= set(cards)
-  cur["cards"][name]  |= take_random(cur["white"], len(cards), True)
-  cur["answers"][name] = cards
-  cur["tick"]         += 1
+  more, wht = take_random(cur["wht"], len(cards), empty_ok = True)
+  hand = (cur["cards"][name] - set(cards)) | more
+  return dict(
+    cards   = { **cur["cards"], name: hand },
+    answers = { **cur["answers"], name: cards },
+    wht     = wht
+  )
 
 def choose_answer(cur, cards):
   winner = ([ k for k, v in cur["answers"].items()
-                         if set(cards) == set(v) ] + [None])[0]
+                if set(cards) == set(v) ] + [None])[0]
   if winner:
-    cur["points"].setdefault(winner, 0)
-    cur["points"][winner] += 1
-    cur["msg"] = "Winner: {}.".format(winner)
+    return dict(
+      points = { **cur["points"], winner: cur["points"][winner] + 1 },
+      msg = "Winner: {}.".format(winner), card = None
+    )
   else:
-    cur["msg"] = "Randomness won."
-  cur["card"] = None
-  cur["tick"] += 1
+    return dict(msg = "Randomness won.", card = None)
+
+def player_data(cur):
+  return ", ".join( p + ("*" if cur["czar"] == p else "")
+                      + " (" + str(cur["points"].get(p, 0)) + ")"
+                      for p in sorted(cur["players"]) )
 
 def data(cur, game, name):
-  ans = None
-  com = len(cur["answers"]) == len(cur["players"]) - 1
-  if com:
+  ans, done = None, len(cur["answers"]) == len(cur["players"]) - 1
+  if done:
     ans = cur["rand_ans"] + list(cur["answers"].values())
     random.shuffle(ans)
-  players = ", ".join([ p + ("*" if cur["czar"] == p else "") + " ("
-                          + str(cur["points"].get(p, 0)) + ")"
-                          for p in sorted(cur["players"]) ])
   return dict(
-    cur = cur, game = game, name = name, players = players,
+    cur = cur, game = game, name = name, players = player_data(cur),
     you_czar = cur["czar"] == name, card = cur["card"],
-    answers = ans, complete = com,
-    msg = cur["msg"], tick = cur["tick"],
-    black = black, white = white, POLL = POLL
+    answers = ans, complete = done, msg = cur["msg"],
+    tick = cur["tick"], black = black, white = white, POLL = POLL
+  )
+
+def game_over(cur, game, name):
+  return render_template(
+    "done.html", game = game, name = name, players = player_data(cur)
   )
 
 # === http ===
@@ -133,7 +154,8 @@ def index():
 
 @app.route("/status/<game>")
 def status(game):
-  return jsonify(dict(tick = games[game]["tick"]))
+  cur = current_game(game)
+  return jsonify(dict(tick = cur["tick"]))
 
 @app.route("/play", methods = ["POST"])
 def play():
@@ -142,13 +164,12 @@ def play():
   if not valid_ident(game): raise InvalidParam("game")
   if not valid_ident(name): raise InvalidParam("name")
   try:
-    if request.form.get("restart"): del games[game]
-    cur = init_game(game, name)
-    if cur is None:
-      return render_template("late.html", game = game)
+    if request.form.get("restart"): restart_game(game)
+    new = init_game(game, name)
+    if new: update_game(game, new)
+    cur = current_game(game)
     if request.form.get("start") and cur["card"] is None:
-      if not start_round(cur, game):
-        return render_template("done.html", game = game, name = name)
+      update_game(game, start_round(cur, game))
     elif card or answ:
       err = InvalidParam("answ" if answ else "card*")
       cds = card = answ.split(",") if answ else [
@@ -158,13 +179,12 @@ def play():
       if not all( x.isdigit() for x in cds ): raise err
       cards = list(map(int, cds))
       if len(set(cards)) != cur["blanks"]: raise err
-      if answ:
-        choose_answer(cur, cards)
-      else:
-        play_cards(cur, name, cards)
-  except OutOfCards as e:
-    return render_template("done.html", game = game, name = name)
-  # print("GAME:", cur) # DEBUG
-  return render_template("play.html", **data(cur, game, name))
+      update_game(game, choose_answer(cur, cards) if answ else
+                        play_cards(cur, name, cards))
+    return render_template("play.html", **data(cur, game, name))
+  except InProgress:
+    return render_template("late.html", game = game)
+  except OutOfCards:
+    return game_over(current_game(game), game, name)
 
 # vim: set tw=70 sw=2 sts=2 et fdm=marker :

@@ -141,7 +141,7 @@
               if (r.status != 200) { return }
               const t = JSON.parse(r.responseText).tick
               if (t > tick) {
-                document.getElementById("form").submit()
+                document.getElementById("form0").submit()
               } else {
                 setTimeout(f, {{ POLL }})
               }

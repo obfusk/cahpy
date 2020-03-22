@@ -7,11 +7,20 @@
     <title>cahpy | {{ game }} | {{ name }}</title>
   </head>
   <body>
-    Game over.
-    <br/>
-    <form method="post" action="/play">
+    <form id="form" method="post">
       <input type="hidden" name="game" value="{{ game }}" />
       <input type="hidden" name="name" value="{{ name }}" />
+      Game:
+      <a href="/?game={{ game }}">{{ game }}</a>
+      <br/>
+      Players: {{ players }}
+      <br/>
+      Your name: {{ name }}
+      <br/>
+      <br/>
+      <strong>Game over.</strong>
+      <br/>
+      <br/>
       <button name="restart" value="restart">Restart!</button>
     </form>
   </body>
