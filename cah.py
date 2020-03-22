@@ -75,7 +75,7 @@ def init_game(game, name):
   if game not in games:
     games[game] = dict(
       blk = set(range(len(black))), wht = set(range(len(white))),
-      players = set(), cards = {}, points = {}, czar = None,
+      players = [], cards = {}, points = {}, czar = None,
       card = None, blanks = None, rand_ans = [], answers = {},
       msg = None, tick = 0
     )
@@ -84,7 +84,7 @@ def init_game(game, name):
     if cur["card"]: raise InProgress()  # in progress -> can't join
     hand, wht = take_random(cur["wht"], CARDS, less_ok = False)
     return dict(
-      players = cur["players"] | set([name]),
+      players = cur["players"] + [name],
       cards   = { **cur["cards"], name: hand },
       points  = { **cur["points"], name: 0 },
       wht     = wht
@@ -92,7 +92,8 @@ def init_game(game, name):
   return None
 
 def start_round(cur, game):
-  czar        = get_random1(cur["players"] - set([cur["czar"]]))
+  n           = len(cur["players"])
+  czar        = 0 if cur["czar"] is None else (cur["czar"] + 1) % n
   cards, blk  = take_random(cur["blk"], 1); card = cards.pop()
   b, wht      = blanks(black[card]), cur["wht"]
   rand_ans    = []
@@ -127,9 +128,9 @@ def choose_answer(cur, cards):
     return dict(msg = "Randomness won.", card = None)
 
 def player_data(cur):
-  return ", ".join( p + ("*" if cur["czar"] == p else "")
+  return ", ".join( p + ("*" if cur["czar"] == i else "")
                       + " (" + str(cur["points"].get(p, 0)) + ")"
-                      for p in sorted(cur["players"]) )
+                      for i, p in enumerate(sorted(cur["players"])) )
 
 def data(cur, game, name):
   ans, done = None, len(cur["answers"]) == len(cur["players"]) - 1
@@ -138,9 +139,10 @@ def data(cur, game, name):
     random.shuffle(ans)
   return dict(
     cur = cur, game = game, name = name, players = player_data(cur),
-    you_czar = cur["czar"] == name, card = cur["card"],
-    answers = ans, complete = done, msg = cur["msg"],
-    tick = cur["tick"], black = black, white = white, POLL = POLL
+    you_czar = cur["czar"] == cur["players"].index(name),
+    card = cur["card"], answers = ans, complete = done,
+    msg = cur["msg"], tick = cur["tick"],
+    black = black, white = white, POLL = POLL
   )
 
 def game_over(cur, game, name):
