@@ -34,7 +34,7 @@ class OutOfCards(RuntimeError): pass
 
 class InvalidParam(RuntimeError): pass
 
-def blanks(s): return s.count("____")
+def blanks(s): return max(1, s.count("____"))
 
 with open("black") as f: black = list(f)
 with open("white") as f: white = list(f)
@@ -61,11 +61,12 @@ def init_game(game, name):
     games[game] = dict(
       black = set(range(len(black))), white = set(range(len(white))),
       players = set(), cards = {}, points = {}, czar = None,
-      card = None, rand_ans = [], answers = {}, msg = None, tick = 0
+      card = None, blanks = None, rand_ans = [], answers = {},
+      msg = None, tick = 0
     )
   cur = games[game]
   if name not in cur["players"]:
-    if cur["czar"]: return None   # in progress -> can't join
+    if cur["card"]: return None   # in progress -> can't join
     cur["players"].add(name)
     cur["cards"][name] = take_random(cur["white"], CARDS)
     cur["tick"] += 1
@@ -100,8 +101,8 @@ def choose_answer(cur, cards):
     cur["points"][winner] += 1
     cur["msg"] = "Winner: {}.".format(winner)
   else:
-    cur["msg"] = "The random card won."
-  cur["card"] = cur["czar"] = None
+    cur["msg"] = "Randomness won."
+  cur["card"] = None
   cur["tick"] += 1
 
 def data(cur, game, name):
@@ -145,7 +146,7 @@ def play():
     cur = init_game(game, name)
     if cur is None:
       return render_template("late.html", game = game)
-    if request.form.get("start") and cur["czar"] is None:
+    if request.form.get("start") and cur["card"] is None:
       if not start_round(cur, game):
         return render_template("done.html", game = game, name = name)
     elif card or answ:
