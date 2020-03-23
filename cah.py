@@ -139,7 +139,7 @@ def player_data(cur):
 
 def answer_data(cur):
   ans = cur["rand_ans"] + list(cur["answers"].values())
-  random.shuffle(ans)
+  random.Random(cur["card"]).shuffle(ans)
   return ans
 
 def data(cur, game, name):

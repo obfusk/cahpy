@@ -139,7 +139,9 @@
       {% else %}
         {% if name in cur["answers"] %}
           {% set waiting = true %}
-          {{ answerlist(answers, False) }}
+          {% if complete %}
+            {{ answerlist(answers, False) }}
+          {% endif %}
           {{ waitingfor("czar") }}
         {% else %}
           {% set multiple = cur["blanks"] > 1 %}
@@ -166,7 +168,12 @@
     {% endif %}
       <br/>
       <hr/>
+      #black: {{ cur["blk"]|length }},
+      #white: {{ cur["wht"]|length }}
+      <br/>
+      <br/>
       <button name="restart" value="restart" form="form0">Restart!</button>
+      <small>(discards current game)</small>
     </form>
     {% if waiting %}
       <script>
