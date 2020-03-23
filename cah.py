@@ -112,20 +112,27 @@ def init_game(game, name, nietzsche = False, packs = None):
   return None
 
 def start_round(cur, game):
-  czar        = NIETZSCHE if cur["czar"] == NIETZSCHE else next_czar(cur)
-  cards, blk  = take_random(cur["blk"], 1); card = cards.pop()
-  b, wht      = blanks(black[card]), cur["wht"]
-  rand_ans    = []
-  for _ in range(min(RANDOM, len(wht) // b)):
-    ans, wht = take_random(wht, b, less_ok = False)
+  czar      = NIETZSCHE if cur["czar"] == NIETZSCHE else next_czar(cur)
+  cds, blk  = take_random(cur["blk"], 1); card = cds.pop()
+  bla, wht  = blanks(black[card]), cur["wht"]
+  rand_ans  = []
+  for _ in range(min(RANDOM, len(wht) // bla)):
+    ans, wht = take_random(wht, bla, less_ok = False)
     rand_ans.append((None, ans))
-  if any( len(c) < b for c in cur["cards"].values() ):
+  if any( len(c) < bla for c in cur["cards"].values() ):
     raise OutOfCards("empty hand")  # some players w/o cards -> done
-  return dict(
-    czar = czar, card = card, blk = blk, wht = wht, blanks = b,
+  res = dict(
+    czar = czar, card = card, blk = blk, blanks = bla,
     rand_ans = rand_ans, answers = {}, votes = {},
     msg = None, prev = None
   )
+  if bla > 2:
+    res["cards"] = cur["cards"].copy()
+    for hand in res["cards"].values():
+      new, wht = take_random(wht, bla - 1, empty_ok = True)
+      hand |= new
+  res["wht"] = wht
+  return res
 
 def play_cards(cur, name, cards, discard = None):
   old = set(cards)
@@ -148,7 +155,7 @@ def choose_answer(cur, name, cards):
   if cur["czar"] == NIETZSCHE:
     votes = { **cur["votes"], name: winner }
     if len(votes) == len(cur["players"]):
-      pts = { **cur["points"] }
+      pts = cur["points"].copy()
       for p in votes.values():
         if p is not None: pts[p] += 1
       return dict(votes = votes, points = pts, **new)
