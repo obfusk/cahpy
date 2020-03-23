@@ -75,7 +75,7 @@
     </table>
     <br/>
   {% endmacro %}
-  {% macro answerlist(answers, radio = True, votes = False) %}
+  {% macro answerlist(answers, radio = True, reveal = False) %}
     Answers:
     <br/>
     <table>
@@ -97,7 +97,7 @@
       {% if radio %}
         </label>
       {% endif %}
-      {% if votes %}
+      {% if reveal %}
         </td><td>
         {% if nietzsche %}
           ({{ votes_for(p) }})
