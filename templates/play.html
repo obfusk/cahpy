@@ -75,15 +75,16 @@
     </table>
     <br/>
   {% endmacro %}
-  {% macro answerlist(answers, radio = True) %}
+  {% macro answerlist(answers, radio = True, votes = False) %}
     Answers:
     <br/>
     <table>
-    {% for a in answers %}
+    {% for p, a in answers %}
       <tr><td class="top">
       {% if radio %}
         <input type="radio" id="answ{{ loop.index }}"
-          name="answ" value="{{ a|join(",") }}">
+          name="answ" value="{{ a|join(",") }}"
+          {% if name == p %}disabled{% endif %}>
         </td><td>
         <label for="answ{{ loop.index }}">
       {% else %}
@@ -95,6 +96,13 @@
         {% endfor %}
       {% if radio %}
         </label>
+      {% endif %}
+      {% if votes %}
+        </td><td>
+        {% if nietzsche %}
+          ({{ votes_for(p) }})
+        {% endif %}
+        {{ p or "" }}
       {% endif %}
       </td></tr>
     {% endfor %}
@@ -117,6 +125,9 @@
       {% if you_czar %}
         <br/>
         <strong>You're the czar!</strong>
+      {% elif nietzsche %}
+        <br/>
+        <strong>Knights Who Say "Nietzsche!"</strong>
       {% endif %}
       <br/>
       {% if card is not none %}
@@ -135,7 +146,7 @@
         {% if prev is not none %}
           {{ blackcard(prev["card"]) }}
           <br/>
-          {{ answerlist(prev["answers"], False) }}
+          {{ answerlist(prev["answers"], False, True) }}
         {% endif %}
         <noscript>
           {{ refreshbtn() }}
@@ -144,10 +155,12 @@
         <br/>
       <!-- playing -->
       {% else %}
+        {% set answered = name in cur["answers"]  %}
+        {% set voted    = name in cur["votes"]    %}
         <!-- czar -->
-        {% if you_czar %}
-          <!-- choose answer -->
-          {% if complete %}
+        {% if you_czar or (nietzsche and answered) %}
+          <!-- vote -->
+          {% if complete and not (nietzsche and voted) %}
             {{ answerlist(answers) }}
             <button>Choose!</button>
             <br/>
@@ -159,13 +172,13 @@
         <!-- player -->
         {% else %}
           <!-- answered & waiting -->
-          {% if name in cur["answers"] %}
+          {% if answered %}
             {% set waiting = true %}
             {% if complete %}
               {{ answerlist(answers, False) }}
             {% endif %}
             {{ waitingfor("czar") }}
-          <!-- choose answer -->
+          <!-- answer -->
           {% else %}
             {% set multiple = cur["blanks"] > 1 %}
             {% for i in range(cur["blanks"]) %}
@@ -196,6 +209,13 @@
       <br/>
       <br/>
       <button name="restart" value="restart" form="form0">Restart!</button>
+      <script>
+        document.getElementById("form0").onsubmit = e => {
+          if (!window.confirm("Discard current game?")) {
+            e.preventDefault()
+          }
+        }
+      </script>
       <small>(discards current game)</small>
     </form>
     {% if waiting %}

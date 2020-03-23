@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-22
+# Date        : 2020-03-23
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -28,14 +28,15 @@ from flask import Flask, jsonify, request, render_template
 
 # === logic ===
 
-RANDOM  = 1
-CARDS   = 10
-POLL    = 1000
-
-PACKS   = "blue fantasy geek green intl red science sf uk us".split()
+RANDOM    = 1
+CARDS     = 10
+POLL      = 1000
+PACKS     = "blue fantasy geek green intl red science sf uk us".split()
+NIETZSCHE = -1  # "god is dead" (no czar)
 
 class InProgress(RuntimeError): pass
 class OutOfCards(RuntimeError): pass
+class InvalidVote(RuntimeError): pass
 class InvalidParam(RuntimeError): pass
 
 def blanks(s): return max(1, s.count("____"))
@@ -72,13 +73,18 @@ def take_random(s, n, empty_ok = False, less_ok = True):
   t = set(random.sample(s, min(n, len(s))))
   return t, s - t
 
-def init_game(game, name):
+def next_czar(cur):
+  n = len(cur["players"])
+  return 0 if cur["czar"] is None else (cur["czar"] + 1) % n
+
+def init_game(game, name, nietzsche = False):
   if game not in games:
+    czar = NIETZSCHE if nietzsche else None
     games[game] = dict(
       blk = set(range(len(black))), wht = set(range(len(white))),
-      players = [], cards = {}, points = {}, czar = None,
+      players = [], cards = {}, points = {}, czar = czar,
       card = None, blanks = None, rand_ans = [], answers = {},
-      msg = None, prev = None, tick = 0
+      votes = {}, msg = None, prev = None, tick = 0
     )
   cur = current_game(game)
   if name not in cur["players"]:
@@ -93,19 +99,19 @@ def init_game(game, name):
   return None
 
 def start_round(cur, game):
-  n           = len(cur["players"])
-  czar        = 0 if cur["czar"] is None else (cur["czar"] + 1) % n
+  czar        = NIETZSCHE if cur["czar"] == NIETZSCHE else next_czar(cur)
   cards, blk  = take_random(cur["blk"], 1); card = cards.pop()
   b, wht      = blanks(black[card]), cur["wht"]
   rand_ans    = []
   for _ in range(min(RANDOM, len(wht) // b)):
     ans, wht = take_random(wht, b, less_ok = False)
-    rand_ans.append(ans)
+    rand_ans.append((None, ans))
   if any( len(c) < b for c in cur["cards"].values() ):
     raise OutOfCards("empty hand")  # some players w/o cards -> done
   return dict(
     czar = czar, card = card, blk = blk, wht = wht, blanks = b,
-    rand_ans = rand_ans, answers = {}, msg = None, prev = None
+    rand_ans = rand_ans, answers = {}, votes = {},
+    msg = None, prev = None
   )
 
 def play_cards(cur, name, cards, discard = None):
@@ -119,19 +125,29 @@ def play_cards(cur, name, cards, discard = None):
     wht     = wht
   )
 
-def choose_answer(cur, cards):
+def choose_answer(cur, name, cards):
   winner = ([ k for k, v in cur["answers"].items()
                 if set(cards) == set(v) ] + [None])[0]
   new = dict(card = None, prev = dict(
     card = cur["card"], answers = answer_data(cur)
   ))
-  if winner:
-    return dict(
-      points = { **cur["points"], winner: cur["points"][winner] + 1 },
-      msg = "Winner: {}.".format(winner), **new
-    )
+  if winner == name: raise InvalidVote("vote for own answer")
+  if cur["czar"] == NIETZSCHE:
+    votes = { **cur["votes"], name: winner }
+    if len(votes) == len(cur["players"]):
+      pts = { **cur["points"] }
+      for p in votes.values():
+        if p is not None: pts[p] += 1
+      return dict(votes = votes, points = pts, **new)
+    else:
+      return dict(votes = votes)
   else:
-    return dict(msg = "Randomness won.", **new)
+    if winner:
+      pts = { **cur["points"], winner: cur["points"][winner] + 1 }
+      msg = "Winner: {}.".format(winner)
+      return dict(points = pts, msg = msg, **new)
+    else:
+      return dict(msg = "rand() won.", **new)
 
 def player_data(cur):
   return ", ".join( p + ("*" if cur["czar"] == i else "")
@@ -139,18 +155,22 @@ def player_data(cur):
                       for i, p in enumerate(sorted(cur["players"])) )
 
 def answer_data(cur):
-  ans = cur["rand_ans"] + list(cur["answers"].values())
+  ans = cur["rand_ans"] + list(cur["answers"].items())
   random.Random(cur["card"]).shuffle(ans)
   return ans
 
 def data(cur, game, name):
-  done = len(cur["answers"]) == len(cur["players"]) - 1
+  n, nietzsche  = len(cur["players"]), cur["czar"] == NIETZSCHE
+  done          = len(cur["answers"]) == (n if nietzsche else n-1)
+  votes_for     = lambda p: list(cur["votes"].values()).count(p)
   return dict(
     cur = cur, game = game, name = name, players = player_data(cur),
     you_czar = cur["czar"] == cur["players"].index(name),
-    card = cur["card"], answers = answer_data(cur) if done else None,
-    complete = done, msg = cur["msg"], prev = cur["prev"],
-    tick = cur["tick"], black = black, white = white, POLL = POLL
+    nietzsche = nietzsche, card = cur["card"],
+    answers = answer_data(cur) if done else None,
+    votes_for = votes_for, complete = done, msg = cur["msg"],
+    prev = cur["prev"], tick = cur["tick"],
+    black = black, white = white, POLL = POLL
   )
 
 def game_over(cur, game, name):
@@ -174,13 +194,14 @@ def status(game):
 
 @app.route("/play", methods = ["POST"])
 def play():
-  game, name = request.form.get("game"), request.form.get("name")
-  card, answ = request.form.get("card0"), request.form.get("answ")
+  game, name  = request.form.get("game") , request.form.get("name")
+  card, answ  = request.form.get("card0"), request.form.get("answ")
+  nietzsche   = request.form.get("nietzsche")
   try:
     if not valid_ident(game): raise InvalidParam("game")
     if not valid_ident(name): raise InvalidParam("name")
     if request.form.get("restart"): restart_game(game)
-    new = init_game(game, name)
+    new = init_game(game, name, nietzsche)
     if new: update_game(game, new)
     cur = current_game(game)
     if request.form.get("start") and cur["card"] is None:
@@ -195,7 +216,7 @@ def play():
       cards = list(map(int, cds))
       if len(set(cards)) != cur["blanks"]: raise err
       if answ:
-        new = choose_answer(cur, cards)
+        new = choose_answer(cur, name, cards)
       else:
         rm = request.form.get("cardd")
         if rm and not rm.isdigit(): raise InvalidParam("cardd")
@@ -206,6 +227,8 @@ def play():
     return render_template("late.html", game = game)
   except OutOfCards:
     return game_over(current_game(game), game, name)
+  except InvalidVote as e:
+    return render_template("error.html", error = e.args[0]), 400
   except InvalidParam as e:
     error = "invalid parameter: {}".format(e.args[0])
     return render_template("error.html", error = error), 400

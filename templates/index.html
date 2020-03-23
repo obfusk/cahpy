@@ -17,15 +17,24 @@
   </head>
   <body>
     <form method="post" action="/play">
-      <label>Game<sup>*</sup>:
+      <label>
+        Game<sup>*</sup>:
         <input name="game" value="{{ game }}" />
       </label>
       <br/>
-      <label>Name<sup>*</sup>:
+      <label>
+        Name<sup>*</sup>:
         <input name="name" />
       </label>
       <br/>
+      <label>
+        <input type="checkbox" name="nietzsche" value="nietzsche" />
+        Say "Nietzsche!"
+      </label>
+      <br/>
+      <br/>
       <button>Play!</button>
+      <br/>
       <br/>
       <small>(<sup>*</sup> no spaces)</small>
     </form>
