@@ -4,7 +4,7 @@
 
     File        : templates/play.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-22
+    Date        : 2020-03-23
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -12,9 +12,7 @@
 
   -->
   <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    {% include "_meta.html" %}
     <title>cahpy | {{ game }} | {{ name }}</title>
     <style>
       .black {
@@ -37,75 +35,79 @@
       }
     </style>
   </head>
-  <body>
-    {% macro formstart(id) %}
-      <form id="{{ id }}" method="post">
-        <input type="hidden" name="game" value="{{ game }}" />
-        <input type="hidden" name="name" value="{{ name }}" />
-    {% endmacro %}
-    {% macro refreshbtn() %}
-      <button id="refresh" form="form0">Refresh!</button>
-    {% endmacro %}
-    {% macro waitingfor(who) %}
-      Waiting for {{ who }}...
+  <!-- macros -->
+  {% macro formstart(id) %}
+    <form id="{{ id }}" method="post">
+      <input type="hidden" name="game" value="{{ game }}" />
+      <input type="hidden" name="name" value="{{ name }}" />
+  {% endmacro %}
+  {% macro refreshbtn() %}
+    <button id="refresh" form="form0">Refresh!</button>
+  {% endmacro %}
+  {% macro waitingfor(who) %}
+    Waiting for {{ who }}...
+    <br/>
+    <noscript>
       <br/>
-      <noscript>
-        <br/>
-        {{ refreshbtn() }}
-        <br/>
-      </noscript>
-    {% endmacro %}
-    {% macro blackcard(card) %}
-      Black card:
-      <span class="black">{{ black[card]|safe }}</span>
+      {{ refreshbtn() }}
       <br/>
-    {% endmacro %}
-    {% macro whitecards(i, info = "", cls = "radio") %}
-      White card{{ info }}:
-      <br/>
-      <table>
-      {% for c in cur["cards"][name] %}
-        <tr><td class="top">
-        <input type="radio" id="card{{ i }}-{{ c }}"
-          name="card{{ i }}" value="{{ c }}" class="{{ cls }}">
+    </noscript>
+  {% endmacro %}
+  {% macro blackcard(card) %}
+    Black card:
+    <span class="black">{{ black[card]|safe }}</span>
+    <br/>
+  {% endmacro %}
+  {% macro whitecards(i, info = "", cls = "radio") %}
+    White card{{ info }}:
+    <br/>
+    <table>
+    {% for c in cur["cards"][name] %}
+      <tr><td class="top">
+      <input type="radio" id="card{{ i }}-{{ c }}"
+        name="card{{ i }}" value="{{ c }}" class="{{ cls }}">
+      </td><td>
+      <label for="card{{ i }}-{{ c }}" class="white">
+        {{ white[c]|safe }}
+      </label>
+      </td></tr>
+    {% endfor %}
+    </table>
+    <br/>
+  {% endmacro %}
+  {% macro answerlist(answers, radio = True) %}
+    Answers:
+    <br/>
+    <table>
+    {% for a in answers %}
+      <tr><td class="top">
+      {% if radio %}
+        <input type="radio" id="answ{{ loop.index }}"
+          name="answ" value="{{ a|join(",") }}">
         </td><td>
-        <label for="card{{ i }}-{{ c }}" class="white">
-          {{ white[c]|safe }}
+        <label for="answ{{ loop.index }}">
+      {% else %}
+        »
+        </td><td>
+      {% endif %}
+        {% for c in a %}
+          <span class="white">{{ white[c]|safe }}</span>
+        {% endfor %}
+      {% if radio %}
         </label>
-        </td></tr>
-      {% endfor %}
-      </table>
-      <br/>
-    {% endmacro %}
-    {% macro answerlist(answers, radio = True) %}
-      Answers:
-      <br/>
-      <table>
-      {% for a in answers %}
-        <tr><td class="top">
-        {% if radio %}
-          <input type="radio" id="answ{{ loop.index }}"
-            name="answ" value="{{ a|join(",") }}">
-          </td><td>
-          <label for="answ{{ loop.index }}">
-        {% else %}
-          »
-          </td><td>
-        {% endif %}
-          {% for c in a %}
-            <span class="white">{{ white[c]|safe }}</span>
-          {% endfor %}
-        {% if radio %}
-          </label>
-        {% endif %}
-        </td></tr>
-      {% endfor %}
-      </table>
-      <br/>
-    {% endmacro %}
+      {% endif %}
+      </td></tr>
+    {% endfor %}
+    </table>
+    <br/>
+  {% endmacro %}
+  <body>
+    <!-- refresh/restart form -->
     {{ formstart("form0") }}
     </form>
+    <!-- main form -->
     {{ formstart("form") }}
+      <!-- game & player info -->
       Game:
       <a href="/?game={{ game }}">{{ game }}</a>
       <br/>
@@ -127,58 +129,66 @@
         <br/>
       {% endif %}
       <br/>
-    {% if card is none %}
-      {% set waiting = true %}
-      {% if prev is not none %}
-        {{ blackcard(prev["card"]) }}
+      <!-- ready for first/new round -->
+      {% if card is none %}
+        {% set waiting = true %}
+        {% if prev is not none %}
+          {{ blackcard(prev["card"]) }}
+          <br/>
+          {{ answerlist(prev["answers"], False) }}
+        {% endif %}
+        <noscript>
+          {{ refreshbtn() }}
+        </noscript>
+        <button name="start" value="start">New round!</button>
         <br/>
-        {{ answerlist(prev["answers"], False) }}
-      {% endif %}
-      <noscript>
-        {{ refreshbtn() }}
-      </noscript>
-      <button name="start" value="start">New round!</button>
-      <br/>
-    {% else %}
-      {% if you_czar %}
-        {% if complete %}
-          {{ answerlist(answers) }}
-          <button>Choose!</button>
-          <br/>
-        {% else %}
-          {% set waiting = true %}
-          {{ waitingfor("players") }}
-        {% endif %}
+      <!-- playing -->
       {% else %}
-        {% if name in cur["answers"] %}
-          {% set waiting = true %}
+        <!-- czar -->
+        {% if you_czar %}
+          <!-- choose answer -->
           {% if complete %}
-            {{ answerlist(answers, False) }}
+            {{ answerlist(answers) }}
+            <button>Choose!</button>
+            <br/>
+          <!-- waiting for players -->
+          {% else %}
+            {% set waiting = true %}
+            {{ waitingfor("players") }}
           {% endif %}
-          {{ waitingfor("czar") }}
+        <!-- player -->
         {% else %}
-          {% set multiple = cur["blanks"] > 1 %}
-          {% for i in range(cur["blanks"]) %}
-            {{ whitecards(i, " #{}".format(i+1) if multiple else "") }}
-          {% endfor %}
-          {{ whitecards("d", " to discard (optional)", "") }}
-          <script>
-            document.getElementById("form").onsubmit = e => {
-              const b = {{ cur["blanks"] }}
-              const r = document.getElementsByClassName("radio")
-              const s = (new Set(Array.from(r).filter(x => x.checked)
-                                 .map(x => x.value))).size
-              if (s != b) {
-                alert(`Please select ${b} (different) card(s).`)
-                e.preventDefault()
+          <!-- answered & waiting -->
+          {% if name in cur["answers"] %}
+            {% set waiting = true %}
+            {% if complete %}
+              {{ answerlist(answers, False) }}
+            {% endif %}
+            {{ waitingfor("czar") }}
+          <!-- choose answer -->
+          {% else %}
+            {% set multiple = cur["blanks"] > 1 %}
+            {% for i in range(cur["blanks"]) %}
+              {{ whitecards(i, " #{}".format(i+1) if multiple else "") }}
+            {% endfor %}
+            {{ whitecards("d", " to discard (optional)", "") }}
+            <script>
+              document.getElementById("form").onsubmit = e => {
+                const b = {{ cur["blanks"] }}
+                const r = document.getElementsByClassName("radio")
+                const s = (new Set(Array.from(r).filter(x => x.checked)
+                                   .map(x => x.value))).size
+                if (s != b) {
+                  alert(`Please select ${b} (different) card(s).`)
+                  e.preventDefault()
+                }
               }
-            }
-          </script>
-          <button>Choose!</button>
-          <br/>
+            </script>
+            <button>Choose!</button>
+            <br/>
+          {% endif %}
         {% endif %}
       {% endif %}
-    {% endif %}
       <br/>
       <hr/>
       #black: {{ cur["blk"]|length }},
@@ -210,18 +220,6 @@
         }
       </script>
     {% endif %}
-    <br/>
-    <hr/>
-    <footer>
-      <small>
-        » Source:
-        <a href="https://github.com/obfusk/cahpy">GitHub</a>
-        » Code License:
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPLv3+</a>
-        » Cards License:
-        <a href="https://creativecommons.org/licenses/by-nc-sa/2.0/">CC BY-NC-SA</a>
-        » <a href="/">New Game</a>
-      </small>
-    </footer>
+    {% include "_footer.html" %}
   </body>
 </html>

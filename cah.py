@@ -20,6 +20,7 @@
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
+# * leave game
 
 import random, secrets
 
