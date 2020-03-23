@@ -63,6 +63,15 @@ Just `git push` :)
 NB: you'll need to set `WEB_CONCURRENCY=1` b/c it only works
 single-theaded atm!
 
+### Packs
+
+You can set `CAHPY_PACKS` to override the default choice of packs
+(which is all non-unofficial packs in `cards/`).
+
+```bash
+$ export CAHPY_PACKS="unofficial-anime unofficial-anime-exp1"
+```
+
 ## License
 
 ### Code
@@ -73,7 +82,9 @@ single-theaded atm!
 
 ### Cards
 
-(i.e. `black-*`, `white-*`)
+(i.e. `cards/*`)
+
+See [`cards/COPYING`](cards/COPYING).
 
 © [Cards Against Humanity](https://www.cardsagainsthumanity.com)
 

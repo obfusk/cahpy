@@ -16,13 +16,13 @@
 # NB: only works single-threaded!
 
 # TODO:
-# * select decks, options
+# * select packs, options
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
 # * leave game
 
-import random, secrets
+import os, random, secrets
 
 from flask import Flask, jsonify, request, render_template
 
@@ -31,8 +31,12 @@ from flask import Flask, jsonify, request, render_template
 RANDOM    = 1
 CARDS     = 10
 POLL      = 1000
-PACKS     = "blue fantasy geek green intl red science sf uk us".split()
 NIETZSCHE = -1  # "god is dead" (no czar)
+
+if os.environ.get("CAHPY_PACKS"):
+  PACKS = os.environ.get("CAHPY_PACKS").split()
+else:
+  PACKS = "blue fantasy geek green intl red science sf uk us".split()
 
 class InProgress(RuntimeError): pass
 class OutOfCards(RuntimeError): pass
@@ -41,11 +45,20 @@ class InvalidParam(RuntimeError): pass
 
 def blanks(s): return max(1, s.count("____"))
 
-black, white = set(), set()
+black_cards, white_cards = {}, {}
 for pack in PACKS:
-  with open("black-" + pack) as f: black |= set(f)
-  with open("white-" + pack) as f: white |= set(f)
-black, white = list(black), list(white)
+  with open("cards/black-" + pack) as f:
+    for card in f: black_cards.setdefault(card, pack)
+  with open("cards/white-" + pack) as f:
+    for card in f: white_cards.setdefault(card, pack)
+black, white = list(black_cards), list(white_cards)
+
+def select_cards(packs):
+  blk = set( i for i, card in enumerate(black)
+               if black_cards[card] in packs )
+  wht = set( i for i, card in enumerate(white)
+               if white_cards[card] in packs )
+  return blk, wht
 
 # global state
 games = {}
@@ -77,14 +90,14 @@ def next_czar(cur):
   n = len(cur["players"])
   return 0 if cur["czar"] is None else (cur["czar"] + 1) % n
 
-def init_game(game, name, nietzsche = False):
+def init_game(game, name, nietzsche = False, packs = None):
   if game not in games:
-    czar = NIETZSCHE if nietzsche else None
+    blk, wht  = select_cards(packs or PACKS)
+    czar      = NIETZSCHE if nietzsche else None
     games[game] = dict(
-      blk = set(range(len(black))), wht = set(range(len(white))),
-      players = [], cards = {}, points = {}, czar = czar,
-      card = None, blanks = None, rand_ans = [], answers = {},
-      votes = {}, msg = None, prev = None, tick = 0
+      blk = blk, wht = wht, players = [], cards = {}, points = {},
+      czar = czar, card = None, blanks = None, rand_ans = [],
+      answers = {}, votes = {}, msg = None, prev = None, tick = 0
     )
   cur = current_game(game)
   if name not in cur["players"]:
@@ -185,7 +198,7 @@ app = Flask(__name__)
 @app.route("/")
 def index():
   game = request.args.get("game") or secrets.token_hex(10)
-  return render_template("index.html", game = game)
+  return render_template("index.html", game = game, packs = PACKS)
 
 @app.route("/status/<game>")
 def status(game):
@@ -197,11 +210,13 @@ def play():
   game, name  = request.form.get("game") , request.form.get("name")
   card, answ  = request.form.get("card0"), request.form.get("answ")
   nietzsche   = request.form.get("nietzsche")
+  packs       = request.form.getlist("pack")
   try:
     if not valid_ident(game): raise InvalidParam("game")
     if not valid_ident(name): raise InvalidParam("name")
     if request.form.get("restart"): restart_game(game)
-    new = init_game(game, name, nietzsche)
+    pks = set(packs) & set(PACKS) if packs else None
+    new = init_game(game, name, nietzsche, pks)
     if new: update_game(game, new)
     cur = current_game(game)
     if request.form.get("start") and cur["card"] is None:
