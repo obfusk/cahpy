@@ -30,6 +30,10 @@
       .black, .white {
         display: inline-block;
         padding: 0.2em;
+        margin: 1px;
+      }
+      .top {
+        vertical-align: top;
       }
     </style>
   </head>
@@ -59,26 +63,34 @@
     {% macro whitecards(i, info = "", cls = "radio") %}
       White card{{ info }}:
       <br/>
+      <table>
       {% for c in cur["cards"][name] %}
+        <tr><td class="top">
         <input type="radio" id="card{{ i }}-{{ c }}"
           name="card{{ i }}" value="{{ c }}" class="{{ cls }}">
+        </td><td>
         <label for="card{{ i }}-{{ c }}" class="white">
           {{ white[c]|safe }}
         </label>
-        <br/>
+        </td></tr>
       {% endfor %}
+      </table>
       <br/>
     {% endmacro %}
     {% macro answerlist(answers, radio = True) %}
       Answers:
       <br/>
+      <table>
       {% for a in answers %}
+        <tr><td class="top">
         {% if radio %}
           <input type="radio" id="answ{{ loop.index }}"
             name="answ" value="{{ a|join(",") }}">
+          </td><td>
           <label for="answ{{ loop.index }}">
         {% else %}
           »
+          </td><td>
         {% endif %}
           {% for c in a %}
             <span class="white">{{ white[c]|safe }}</span>
@@ -86,8 +98,9 @@
         {% if radio %}
           </label>
         {% endif %}
-        <br/>
+        </td></tr>
       {% endfor %}
+      </table>
       <br/>
     {% endmacro %}
     {{ formstart("form0") }}
