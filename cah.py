@@ -25,7 +25,8 @@
 
 import os, random, secrets
 
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, redirect, request, \
+                  render_template, url_for
 
 # === logic ===
 
@@ -211,10 +212,10 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-  game = request.args.get("game") or secrets.token_hex(10)
-  join = "join" in request.args
-  return render_template("index.html", game = game, join = join,
-                                       packs = PACKS)
+  args = request.args
+  game = args.get("game") or secrets.token_hex(10)
+  return render_template("index.html", game = game,
+    name = args.get("name"), join = "join" in args, packs = PACKS)
 
 @app.route("/status/<game>")
 def status(game):
@@ -223,25 +224,27 @@ def status(game):
 
 @app.route("/play", methods = ["POST"])
 def play():
-  game, name  = request.form.get("game") , request.form.get("name")
-  card, answ  = request.form.get("card0"), request.form.get("answ")
-  nietzsche   = request.form.get("nietzsche")
-  packs       = request.form.getlist("pack")
+  form              = request.form
+  game, name        = form.get("game")      , form.get("name")
+  card, answ        = form.get("card0")     , form.get("answ")
+  nietzsche, packs  = form.get("nietzsche") , form.getlist("pack")
   try:
     if not valid_ident(game): raise InvalidParam("game")
     if not valid_ident(name): raise InvalidParam("name")
-    if request.form.get("restart"): restart_game(game)
+    if form.get("restart"): restart_game(game)
+    if form.get("restart") or form.get("rejoin"):
+      return redirect(url_for("index", game = game, name = name,
+        join = form.get("rejoin")))
     pks = set(packs) & set(PACKS) if packs else None
     new = init_game(game, name, nietzsche, pks)
     if new: update_game(game, new)
     cur = current_game(game)
-    if request.form.get("start") and cur["card"] is None:
+    if form.get("start") and cur["card"] is None:
       update_game(game, start_round(cur, game))
     elif card or answ:
       err = InvalidParam("answ" if answ else "card*")
       cds = card = answ.split(",") if answ else [
-        request.form.get("card{}".format(i), "")
-          for i in range(cur["blanks"])
+        form.get("card{}".format(i), "") for i in range(cur["blanks"])
       ]
       if not all( x.isdigit() for x in cds ): raise err
       cards = list(map(int, cds))
@@ -249,7 +252,7 @@ def play():
       if answ:
         new = choose_answer(cur, name, cards)
       else:
-        rm = request.form.get("cardd")
+        rm = form.get("cardd")
         if rm and not rm.isdigit(): raise InvalidParam("cardd")
         new = play_cards(cur, name, cards, int(rm) if rm else None)
       update_game(game, new)
