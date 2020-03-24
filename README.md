@@ -2,7 +2,7 @@
 
     File        : README.md
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-23
+    Date        : 2020-03-24
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -66,11 +66,19 @@ single-theaded atm!
 ### Packs
 
 You can set `CAHPY_PACKS` to override the default choice of packs
-(which is all non-unofficial packs in `cards/`).
+(which is `official`).
 
 ```bash
-$ export CAHPY_PACKS="unofficial-anime unofficial-anime-exp1"
+$ export CAHPY_PACKS="uk fantasy sf"  # specific packs
+$ export CAHPY_PACKS="all"            # all packs
+$ export CAHPY_PACKS="official"       # all official packs
+$ export CAHPY_PACKS="unofficial"     # all unofficial packs
 ```
+
+Official packs: `blue`, `fantasy`, `geek`, `green`, `intl`, `red`,
+`science`, `sf`, `uk`, `us`.
+
+Unofficial packs: `unofficial-anime`, `unofficial-anime-exp1`.
 
 ## License
 

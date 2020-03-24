@@ -4,7 +4,7 @@
 
     File        : templates/index.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-23
+    Date        : 2020-03-24
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -13,37 +13,51 @@
   -->
   <head>
     {% include "_meta.html" %}
-    <title>cahpy</title>
+    {% if game %}
+      <title>cahpy | {{ game }}</title>
+    {% else %}
+      <title>cahpy</title>
+    {% endif %}
   </head>
   <body>
     <form method="post" action="/play">
-      <label>
-        Game:
-        <input name="game" value="{{ game }}" />
-      </label>
-      <br/>
+      {% if join %}
+        <input type="hidden" name="game" value="{{ game }}" />
+      {% else %}
+        <label>
+          Game:
+          <input name="game" value="{{ game }}" />
+        </label>
+        <br/>
+      {% endif %}
       <label>
         Name:
         <input name="name" />
       </label>
-      <br/>
-      <label>
-        Options:
-        <input type="checkbox" name="nietzsche" value="nietzsche" />
-        Say "Nietzsche!"
-      </label>
-      <br/>
-      Packs:
-      {% for p in packs %}
+      {% if not join %}
+        <br/>
         <label>
-          <input type="checkbox" name="pack" value="{{ p }}"
-            {% if not "unofficial" in p %}checked{% endif %} />
-          {{ p }}{% if not loop.last %},{% endif %}
+          Options:
+          <input type="checkbox" name="nietzsche" value="nietzsche" />
+          Say "Nietzsche!"
         </label>
-      {% endfor %}
-      <br/>
-      <br/>
-      <button>Play!</button>
+        <br/>
+        Packs:
+        {% for p in packs %}
+          <label>
+            <input type="checkbox" name="pack" value="{{ p }}"
+              {% if not "unofficial" in p %}checked{% endif %} />
+            {{ p }}{% if not loop.last %},{% endif %}
+          </label>
+        {% endfor %}
+        <br/>
+        <br/>
+        <button>Play!</button>
+      {% else %}
+        <br/>
+        <br/>
+        <button>Join!</button>
+      {% endif %}
       <br/>
       <br/>
       <small>NB: spaces are not allowed in Game or Name.</small>

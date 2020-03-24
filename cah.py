@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-23
+# Date        : 2020-03-24
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -16,10 +16,11 @@
 # NB: only works single-threaded!
 
 # TODO:
-# * select packs, options
+# * select options
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
+# * (http) auth
 # * leave game
 
 import os, random, secrets
@@ -33,10 +34,16 @@ CARDS     = 10
 POLL      = 1000
 NIETZSCHE = -1  # "god is dead" (no czar)
 
+OPACKS    = "blue fantasy geek green intl red science sf uk us".split()
+UPACKS    = "unofficial-anime unofficial-anime-exp1".split()
+
 if os.environ.get("CAHPY_PACKS"):
-  PACKS = os.environ.get("CAHPY_PACKS").split()
+  packsets = dict(all = OPACKS + UPACKS, official = OPACKS,
+                  unofficial = UPACKS)
+  PACKS = [ p for k in os.environ.get("CAHPY_PACKS").split()
+              for p in packsets.get(k, [k]) ]
 else:
-  PACKS = "blue fantasy geek green intl red science sf uk us".split()
+  PACKS = OPACKS
 
 class InProgress(RuntimeError): pass
 class OutOfCards(RuntimeError): pass
@@ -92,7 +99,7 @@ def next_czar(cur):
 
 def init_game(game, name, nietzsche = False, packs = None):
   if game not in games:
-    blk, wht  = select_cards(packs or PACKS)
+    blk, wht  = select_cards(set(packs or PACKS))
     czar      = NIETZSCHE if nietzsche else None
     games[game] = dict(
       blk = blk, wht = wht, players = [], cards = {}, points = {},
@@ -205,7 +212,9 @@ app = Flask(__name__)
 @app.route("/")
 def index():
   game = request.args.get("game") or secrets.token_hex(10)
-  return render_template("index.html", game = game, packs = PACKS)
+  join = "join" in request.args
+  return render_template("index.html", game = game, join = join,
+                                       packs = PACKS)
 
 @app.route("/status/<game>")
 def status(game):
