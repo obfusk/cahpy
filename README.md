@@ -78,7 +78,8 @@ $ export CAHPY_PACKS="unofficial"     # all unofficial packs
 Official packs: `blue`, `fantasy`, `geek`, `green`, `intl`, `red`,
 `science`, `sf`, `uk`, `us`.
 
-Unofficial packs: `unofficial-anime`, `unofficial-anime-exp1`.
+Unofficial packs: `unofficial-anime`, `unofficial-anime-exp1`,
+`unofficial-hackers`, `unofficial-malicious-content`.
 
 ## License
 

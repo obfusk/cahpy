@@ -36,7 +36,8 @@ POLL      = 1000
 NIETZSCHE = -1  # "god is dead" (no czar)
 
 OPACKS    = "blue fantasy geek green intl red science sf uk us".split()
-UPACKS    = "unofficial-anime unofficial-anime-exp1".split()
+UPACKS    = [ "unofficial-" + x for x in
+              "anime anime-exp1 hackers malicious-content".split() ]
 
 if os.environ.get("CAHPY_PACKS"):
   packsets = dict(all = OPACKS + UPACKS, official = OPACKS,
