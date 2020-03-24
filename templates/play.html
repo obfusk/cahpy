@@ -33,6 +33,9 @@
       .top {
         vertical-align: top;
       }
+      .small {
+        font-size: 50%;
+      }
     </style>
   </head>
   <!-- macros -->
@@ -56,6 +59,7 @@
   {% macro blackcard(card) %}
     Black card:
     <span class="black">{{ black[card]|safe }}</span>
+    <span class="small">[{{ pack_for("black", card) }}]</span>
     <br/>
   {% endmacro %}
   {% macro whitecards(i, info = "", cls = "radio") %}
@@ -69,6 +73,7 @@
       </td><td>
       <label for="card{{ i }}-{{ c }}" class="white">
         {{ white[c]|safe }}
+        <span class="small">[{{ pack_for("white", c) }}]</span>
       </label>
       </td></tr>
     {% endfor %}
@@ -92,7 +97,10 @@
         </td><td>
       {% endif %}
         {% for c in a %}
-          <span class="white">{{ white[c]|safe }}</span>
+          <span class="white">
+            {{ white[c]|safe }}
+            <span class="small">[{{ pack_for("white", c) }}]</span>
+          </span>
         {% endfor %}
       {% if radio %}
         </label>
@@ -167,6 +175,9 @@
           <!-- waiting for players -->
           {% else %}
             {% set waiting = true %}
+            {% if complete and nietzsche and voted %}
+              {{ answerlist(answers, False) }}
+            {% endif %}
             {{ waitingfor("players") }}
           {% endif %}
         <!-- player -->

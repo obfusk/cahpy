@@ -40,15 +40,15 @@
         <br/>
         <label>
           Options:
-          <input type="checkbox" name="nietzsche" value="nietzsche" />
+          <input type="checkbox" name="nietzsche" value="nietzsche"
+            checked />
           Say "Nietzsche!"
         </label>
         <br/>
         Packs:
         {% for p in packs %}
           <label>
-            <input type="checkbox" name="pack" value="{{ p }}"
-              {% if not "unofficial" in p %}checked{% endif %} />
+            <input type="checkbox" name="pack" value="{{ p }}" checked />
             {{ p }}{% if not loop.last %},{% endif %}
           </label>
         {% endfor %}
@@ -62,9 +62,9 @@
       {% endif %}
       <br/>
       <br/>
-      <small>NB: spaces are not allowed in Game or Name.</small>
+      <small>NB: Spaces are not allowed in Game or Name.</small>
       <br/>
-      <small>NB: options can only be set when creating a new game.</small>
+      <small>NB: Options can only be set when creating a new game.</small>
     </form>
     {% include "_footer.html" %}
   </body>

@@ -1,16 +1,15 @@
-Files:    black-unofficial-anime, black-unofficial-anime-exp1,
-          white-unofficial-anime, white-unofficial-anime-exp1
+Files:    black-uno-anime, black-uno-anime-x1,
+          white-uno-anime, white-uno-anime-x1
 License:  "Creative Commons"
 Original: http://www.desudesbrigade.com/
 Via:      https://github.com/Elizafox/inhumane/tree/master/inhumane/packs
 
-Files:    black-unofficial-hackers, white-unofficial-hackers
+Files:    black-uno-hackers, white-uno-hackers
 License:  CC BY-NC-SA 2.0
 Original: http://hackersagainsthumanity.com/
 Via:      https://github.com/ussjoin/hah-uncorked
 
-Files:    black-unofficial-malicious-content,
-          white-unofficial-malicious-content
+Files:    black-uno-malcont, white-unof-malcont
 License:  CC-BY-NC-SA-4.0
 Original: https://malicious-content.com/
 Via:      https://github.com/joncamfield/malicious_content

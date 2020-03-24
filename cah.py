@@ -33,13 +33,12 @@ from flask import Flask, jsonify, redirect, request, \
 # === logic ===
 
 RANDOM    = 1
-CARDS     = 10
+CARDS     = 13
 POLL      = 1000
 NIETZSCHE = -1  # "god is dead" (no czar)
 
 OPACKS    = "blue fantasy geek green intl red science sf uk us".split()
-UPACKS    = [ "unofficial-" + x for x in
-              "anime anime-exp1 hackers malicious-content".split() ]
+UPACKS    = [ "uno-" + x for x in "anime anime-x1 hackers malcont".split() ]
 
 if os.environ.get("CAHPY_PACKS"):
   packsets = dict(all = OPACKS + UPACKS, official = OPACKS,
@@ -75,6 +74,10 @@ def select_cards(packs):
   wht = set( i for i, card in enumerate(white)
                if white_cards[card] in packs )
   return blk, wht
+
+def pack_for(colour, card):
+  return (black_cards[black[card]] if colour == "black" else
+          white_cards[white[card]]).replace("uno-", "")
 
 # global state
 games = {}
@@ -206,7 +209,7 @@ def data(cur, game, name):
     answers = answer_data(cur) if done else None,
     votes_for = votes_for, complete = done, msg = cur["msg"],
     prev = cur["prev"], tick = cur["tick"],
-    black = black, white = white, POLL = POLL
+    pack_for = pack_for, black = black, white = white, POLL = POLL
   )
 
 def game_over(cur, game, name):
