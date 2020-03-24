@@ -156,10 +156,10 @@ def start_round(cur, game):
 def play_cards(cur, name, cards, discard = None):
   old = set(cards)
   if discard is not None: old.add(discard)
-  new, wht = take_random(cur["wht"], len(old), empty_ok = True)
-  hand = (cur["cards"][name] - old) | new
+  hand = cur["cards"][name] - old
+  new, wht = take_random(cur["wht"], CARDS - len(hand), empty_ok = True)
   return dict(
-    cards   = { **cur["cards"], name: hand },
+    cards   = { **cur["cards"], name: hand | new },
     answers = { **cur["answers"], name: cards },
     wht     = wht
   )

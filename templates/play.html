@@ -58,8 +58,10 @@
   {% endmacro %}
   {% macro blackcard(card) %}
     Black card:
-    <span class="black">{{ black[card]|safe }}</span>
-    <span class="small">[{{ pack_for("black", card) }}]</span>
+    <span class="black">
+      {{ black[card]|safe }}
+      <span class="small">[{{ pack_for("black", card) }}]</span>
+    </span>
     <br/>
   {% endmacro %}
   {% macro whitecards(i, info = "", cls = "radio") %}
