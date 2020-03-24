@@ -25,6 +25,8 @@
 
 import os, random, secrets
 
+import jinja2
+
 from flask import Flask, jsonify, redirect, request, \
                   render_template, url_for
 
@@ -54,12 +56,17 @@ class InvalidParam(RuntimeError): pass
 
 def blanks(s): return max(1, s.count("____"))
 
+def esc(s):
+  return str(jinja2.escape(s)).replace("[i]" , "<i>"   ) \
+                              .replace("[/i]", "</i>"  ) \
+                              .replace("[br]", "<br/>" )
+
 black_cards, white_cards = {}, {}
 for pack in PACKS:
   with open("cards/black-" + pack) as f:
-    for card in f: black_cards.setdefault(card, pack)
+    for card in f: black_cards.setdefault(esc(card), pack)
   with open("cards/white-" + pack) as f:
-    for card in f: white_cards.setdefault(card, pack)
+    for card in f: white_cards.setdefault(esc(card), pack)
 black, white = list(black_cards), list(white_cards)
 
 def select_cards(packs):
