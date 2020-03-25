@@ -30,12 +30,9 @@
         padding: 0.2em;
         margin: 1px;
       }
-      .top {
-        vertical-align: top;
-      }
-      .small {
-        font-size: 50%;
-      }
+      .top    { vertical-align: top; }
+      .tiny   { font-size: xx-small; }
+      button  { font-size: inherit; }
     </style>
   </head>
   <!-- macros -->
@@ -60,7 +57,7 @@
     Black card:
     <span class="black">
       {{ black[card]|safe }}
-      <span class="small">[{{ pack_for("black", card) }}]</span>
+      <span class="tiny">[{{ pack_for("black", card) }}]</span>
     </span>
     <br/>
   {% endmacro %}
@@ -75,7 +72,7 @@
       </td><td>
       <label for="card{{ i }}-{{ c }}" class="white">
         {{ white[c]|safe }}
-        <span class="small">[{{ pack_for("white", c) }}]</span>
+        <span class="tiny">[{{ pack_for("white", c) }}]</span>
       </label>
       </td></tr>
     {% endfor %}
@@ -101,7 +98,7 @@
         {% for c in a %}
           <span class="white">
             {{ white[c]|safe }}
-            <span class="small">[{{ pack_for("white", c) }}]</span>
+            <span class="tiny">[{{ pack_for("white", c) }}]</span>
           </span>
         {% endfor %}
       {% if radio %}
@@ -230,10 +227,13 @@
       </small>
       <br/>
       <br/>
-      <button name="action" value="leave" form="form0">Leave!</button>
+      <hr/>
+      <button name="action" value="leave"   form="form0">Leave!</button>
       <button name="action" value="restart" form="form0">Restart!</button>
-      <small>(discards current game)</small>
-      <button name="action" value="rejoin" form="form0">Rejoin!</button>
+      <button name="action" value="rejoin"  form="form0">Rejoin!</button>
+      <br/>
+      <br/>
+      <small>NB: Restart discards the current game.</small>
       <script>
         document.getElementsByName("action").forEach(b => {
           if (b.form.id == "form0") {
