@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-24
+# Date        : 2020-03-25
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -16,7 +16,6 @@
 # NB: only works single-threaded!
 
 # TODO:
-# * select options
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
@@ -32,8 +31,9 @@ from flask import Flask, jsonify, redirect, request, \
 
 # === logic ===
 
-RANDOM    = 1
-CARDS     = 13
+HANDSIZE  = 13
+RANDOMS   = 1
+
 POLL      = 1000
 NIETZSCHE = -1  # "god is dead" (no czar)
 
@@ -109,19 +109,23 @@ def next_czar(cur):
   n = len(cur["players"])
   return 0 if cur["czar"] is None else (cur["czar"] + 1) % n
 
-def init_game(game, name, nietzsche = False, packs = None):
+def init_game(game, name, nietzsche = False, packs = None,
+              handsize = None, randoms = None):
   if game not in games:
+    if handsize is None: handsize = HANDSIZE
+    if randoms is None: randoms = RANDOMS
     blk, wht  = select_cards(set(packs or PACKS))
     czar      = NIETZSCHE if nietzsche else None
     games[game] = dict(
       blk = blk, wht = wht, players = [], cards = {}, points = {},
       czar = czar, card = None, blanks = None, rand_ans = [],
-      answers = {}, votes = {}, msg = None, prev = None, tick = 0
+      answers = {}, votes = {}, msg = None, prev = None, tick = 0,
+      handsize = handsize, randoms = randoms, packs = sorted(packs)
     )
   cur = current_game(game)
   if name not in cur["players"]:
     if cur["card"]: raise InProgress()  # in progress -> can't join
-    hand, wht = take_random(cur["wht"], CARDS, less_ok = False)
+    hand, wht = take_random(cur["wht"], cur["handsize"], less_ok = False)
     return dict(
       players = cur["players"] + [name],
       cards   = { **cur["cards"], name: hand },
@@ -135,7 +139,7 @@ def start_round(cur, game):
   cds, blk  = take_random(cur["blk"], 1); card = cds.pop()
   bla, wht  = blanks(black[card]), cur["wht"]
   rand_ans  = []
-  for _ in range(min(RANDOM, len(wht) // bla)):
+  for _ in range(min(cur["randoms"], len(wht) // bla)):
     ans, wht = take_random(wht, bla, less_ok = False)
     rand_ans.append((None, ans))
   if any( len(c) < bla for c in cur["cards"].values() ):
@@ -157,7 +161,8 @@ def play_cards(cur, name, cards, discard = None):
   old = set(cards)
   if discard is not None: old.add(discard)
   hand = cur["cards"][name] - old
-  new, wht = take_random(cur["wht"], CARDS - len(hand), empty_ok = True)
+  new, wht = take_random(cur["wht"], cur["handsize"] - len(hand),
+                         empty_ok = True)
   return dict(
     cards   = { **cur["cards"], name: hand | new },
     answers = { **cur["answers"], name: cards },
@@ -226,7 +231,8 @@ def index():
   args = request.args
   game = args.get("game") or secrets.token_hex(10)
   return render_template("index.html", game = game,
-    name = args.get("name"), join = "join" in args, packs = PACKS)
+    name = args.get("name"), join = "join" in args, packs = PACKS,
+    handsize = HANDSIZE, randoms = RANDOMS)
 
 @app.route("/status/<game>")
 def status(game):
@@ -239,6 +245,8 @@ def play():
   game, name        = form.get("game")      , form.get("name")
   card, answ        = form.get("card0")     , form.get("answ")
   nietzsche, packs  = form.get("nietzsche") , form.getlist("pack")
+  handsize          = form.get("handsize" , type = int)
+  randoms           = form.get("randoms"  , type = int)
   try:
     if not valid_ident(game): raise InvalidParam("game")
     if not valid_ident(name): raise InvalidParam("name")
@@ -247,7 +255,7 @@ def play():
       return redirect(url_for("index", game = game, name = name,
         join = form.get("rejoin")))
     pks = set(packs) & set(PACKS) if packs else None
-    new = init_game(game, name, nietzsche, pks)
+    new = init_game(game, name, nietzsche, pks, handsize, randoms)
     if new: update_game(game, new)
     cur = current_game(game)
     if form.get("start") and cur["card"] is None:

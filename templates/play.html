@@ -4,7 +4,7 @@
 
     File        : templates/play.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-24
+    Date        : 2020-03-25
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -138,6 +138,7 @@
       {% elif nietzsche %}
         <br/>
         <strong>Knights Who Say "Nietzsche!"</strong>
+        (no czar)
       {% endif %}
       <br/>
       {% if card is not none %}
@@ -217,8 +218,16 @@
       {% endif %}
       <br/>
       <hr/>
-      #black: {{ cur["blk"]|length }},
-      #white: {{ cur["wht"]|length }}
+      <small>
+        Cards left:
+        {{ cur["blk"]|length }} black,
+        {{ cur["wht"]|length }} white.
+        <br/>
+        Nietzsche: {{ "yes" if nietzsche else "no" }};
+        Cards in hand: {{ cur["handsize"] }};
+        Random answers: {{ cur["randoms"] }};
+        Packs: {{ ", ".join(cur["packs"]) }}.
+      </small>
       <br/>
       <br/>
       <button name="restart" value="restart" form="form0">Restart!</button>
