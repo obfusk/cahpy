@@ -2,7 +2,7 @@
 
     File        : README.md
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-24
+    Date        : 2020-03-25
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -81,6 +81,18 @@ Official packs: `blue`, `fantasy`, `geek`, `green`, `intl`, `red`,
 Unofficial packs: `uno-anime`, `uno-anime-x1`, `uno-hackers`,
 `uno-malcont`.
 
+### Password
+
+```bash
+$ export CAHPY_PASSWORD=swordfish
+```
+
+### Forcing HTTPS
+
+```bash
+$ export CAHPY_HTTPS=force
+```
+
 ## License
 
 ### Code
@@ -94,6 +106,8 @@ Unofficial packs: `uno-anime`, `uno-anime-x1`, `uno-hackers`,
 (i.e. `cards/*`)
 
 See [`cards/COPYING`](cards/COPYING).
+
+#### Official Cards
 
 © [Cards Against Humanity](https://www.cardsagainsthumanity.com)
 

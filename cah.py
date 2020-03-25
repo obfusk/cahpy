@@ -19,10 +19,9 @@
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
-# * (http) auth
 # * leave game
 
-import os, random, secrets
+import functools, os, random, secrets
 
 import jinja2
 
@@ -60,6 +59,7 @@ def esc(s):
                               .replace("[/i]", "</i>"  ) \
                               .replace("[br]", "<br/>" )
 
+# load cards from disk
 black_cards, white_cards = {}, {}
 for pack in PACKS:
   with open("cards/black-" + pack) as f:
@@ -226,21 +226,41 @@ def game_over(cur, game, name):
 
 app = Flask(__name__)
 
+if os.environ.get("CAHPY_HTTPS") == "force":
+  @app.before_request
+  def https_required():
+    if request.scheme != "https":
+      return redirect(request.url.replace("http:", "https:"), code = 301)
+  @app.after_request
+  def after_request_func(response):
+    response.headers["Strict-Transport-Security"] = 'max-age=63072000'
+    return response
+
+if os.environ.get("CAHPY_PASSWORD"):
+  PASSWORD = os.environ.get("CAHPY_PASSWORD")
+  @app.before_request
+  def auth_required():
+    auth = request.authorization
+    if not auth or auth.password != PASSWORD:
+      m = "Password required."
+      return m, 401, { "WWW-Authenticate": 'Basic realm="'+m+'"' }
+
 @app.route("/")
-def index():
+def r_index():
   args = request.args
   game = args.get("game") or secrets.token_hex(10)
-  return render_template("index.html", game = game,
-    name = args.get("name"), join = "join" in args, packs = PACKS,
-    handsize = HANDSIZE, randoms = RANDOMS)
+  return render_template(
+    "index.html", game = game, name = args.get("name"),
+    join = "join" in args, packs = PACKS, handsize = HANDSIZE,
+    randoms = RANDOMS
+  )
 
 @app.route("/status/<game>")
-def status(game):
-  cur = current_game(game)
-  return jsonify(dict(tick = cur["tick"]))
+def r_status(game):
+  return jsonify(dict(tick = current_game(game)["tick"]))
 
 @app.route("/play", methods = ["POST"])
-def play():
+def r_play():
   form              = request.form
   game, name        = form.get("game")      , form.get("name")
   card, answ        = form.get("card0")     , form.get("answ")
@@ -252,8 +272,9 @@ def play():
     if not valid_ident(name): raise InvalidParam("name")
     if form.get("restart"): restart_game(game)
     if form.get("restart") or form.get("rejoin"):
-      return redirect(url_for("index", game = game, name = name,
-        join = form.get("rejoin")))
+      return redirect(url_for(
+        "r_index", game = game, name = name, join = form.get("rejoin")
+      ))
     pks = set(packs) & set(PACKS) if packs else None
     new = init_game(game, name, nietzsche, pks, handsize, randoms)
     if new: update_game(game, new)
