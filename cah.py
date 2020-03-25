@@ -139,9 +139,9 @@ def start_round(cur, game):
   cds, blk  = take_random(cur["blk"], 1); card = cds.pop()
   bla, wht  = blanks(black[card]), cur["wht"]
   rand_ans  = []
-  for _ in range(min(cur["randoms"], len(wht) // bla)):
+  for i in range(min(cur["randoms"], len(wht) // bla)):
     ans, wht = take_random(wht, bla, less_ok = False)
-    rand_ans.append((None, ans))
+    rand_ans.append((i, ans))
   if any( len(c) < bla for c in cur["cards"].values() ):
     raise OutOfCards("empty hand")  # some players w/o cards -> done
   res = dict(
@@ -170,18 +170,18 @@ def play_cards(cur, name, cards, discard = None):
   )
 
 def choose_answer(cur, name, cards):
-  winner = ([ k for k, v in cur["answers"].items()
-                if set(cards) == set(v) ] + [None])[0]
+  f = lambda s: [ k for k, v in s if set(cards) == set(v) ]
   new = dict(card = None, prev = dict(
     card = cur["card"], answers = answer_data(cur)
   ))
+  winner = (f(cur["answers"].items()) + [None])[0]
   if winner == name: raise InvalidVote("vote for own answer")
   if cur["czar"] == NIETZSCHE:
-    votes = { **cur["votes"], name: winner }
+    votes = { **cur["votes"], name: winner or f(cur["rand_ans"])[0] }
     if len(votes) == len(cur["players"]):
       pts = cur["points"].copy()
       for p in votes.values():
-        if p is not None: pts[p] += 1
+        if isinstance(p, str): pts[p] += 1
       return dict(votes = votes, points = pts, **new)
     else:
       return dict(votes = votes)

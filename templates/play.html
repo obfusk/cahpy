@@ -112,7 +112,7 @@
         {% if nietzsche %}
           ({{ votes_for(p) }})
         {% endif %}
-        {{ p or "" }}
+        {{ p if p is string else "" }}
       {% endif %}
       </td></tr>
     {% endfor %}
