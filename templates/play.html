@@ -45,7 +45,7 @@
       <input type="hidden" name="name" value="{{ name }}" />
   {% endmacro %}
   {% macro refreshbtn() %}
-    <button id="refresh" form="form0">Refresh!</button>
+    <button form="form0">Refresh!</button>
   {% endmacro %}
   {% macro waitingfor(who) %}
     Waiting for {{ who }}...
@@ -127,7 +127,7 @@
     {{ formstart("form") }}
       <!-- game & player info -->
       Game:
-      <a href="/?join&game={{ game }}">{{ game }}</a>
+      <a href="/?join=yes&game={{ game }}">{{ game }}</a>
       <br/>
       Players: {{ players }}
       <br/>
@@ -162,7 +162,7 @@
         <noscript>
           {{ refreshbtn() }}
         </noscript>
-        <button name="start" value="start">New round!</button>
+        <button name="action" value="start">New round!</button>
         <br/>
       <!-- playing -->
       {% else %}
@@ -230,16 +230,20 @@
       </small>
       <br/>
       <br/>
-      <button name="restart" value="restart" form="form0">Restart!</button>
-      <script>
-        document.getElementById("form0").onsubmit = e => {
-          if (!window.confirm("Discard current game?")) {
-            e.preventDefault()
-          }
-        }
-      </script>
+      <button name="action" value="leave" form="form0">Leave!</button>
+      <button name="action" value="restart" form="form0">Restart!</button>
       <small>(discards current game)</small>
-      <button name="rejoin" value="rejoin" form="form0">Rejoin!</button>
+      <button name="action" value="rejoin" form="form0">Rejoin!</button>
+      <script>
+        document.getElementsByName("action").forEach(b => {
+          if (b.form.id == "form0") {
+            b.onclick = e => {
+              const q = `Are you sure you want to ${b.value} the game?`
+              if (!window.confirm(q)) { e.preventDefault() }
+            }
+          }
+        })
+      </script>
     </form>
     {% if waiting %}
       <script>

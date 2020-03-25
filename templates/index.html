@@ -28,7 +28,7 @@
     <form method="post" action="/play">
       {% if join %}
         Game:
-        <a href="/?join&game={{ game }}">{{ game }}</a>
+        <a href="/?join=yes&game={{ game }}">{{ game }}</a>
         <input type="hidden" name="game" value="{{ game }}" />
       {% else %}
         <label>

@@ -19,9 +19,8 @@
 # * better game over handling
 # * better error messages
 # * use websocket instead of polling
-# * leave game
 
-import functools, os, random, secrets
+import functools, os, random, secrets, time
 
 import jinja2
 
@@ -47,10 +46,14 @@ if os.environ.get("CAHPY_PACKS"):
 else:
   PACKS = OPACKS
 
-class InProgress(RuntimeError): pass
-class OutOfCards(RuntimeError): pass
-class InvalidVote(RuntimeError): pass
-class InvalidParam(RuntimeError): pass
+class Oops(RuntimeError):
+  def msg(self): return self.args[0]
+class InProgress(Oops):
+  def __init__(self): super().__init__("in progress")
+class OutOfCards(Oops): pass
+class InvalidAction(Oops): pass
+class InvalidParam(Oops):
+  def msg(self): return "invalid parameter: " + self.args[0]
 
 def blanks(s): return max(1, s.count("____"))
 
@@ -90,7 +93,7 @@ def restart_game(game):
 
 def update_game(game, new):
   cur = current_game(game)
-  cur.update(new, tick = cur["tick"] + 1)
+  cur.update(new, tick = max(cur["tick"] + 1, int(time.time())))
 
 def valid_ident(s):
   return s and s.isprintable() and all( not c.isspace() for c in s )
@@ -124,17 +127,22 @@ def init_game(game, name, nietzsche = False, packs = None,
     )
   cur = current_game(game)
   if name not in cur["players"]:
-    if cur["card"]: raise InProgress()  # in progress -> can't join
+    if cur["card"]: raise InProgress()    # in progress -> can't join
+    new       = dict(players = cur["players"] + [name])
+    if name in cur["points"]: return new  # rejoin
     hand, wht = take_random(cur["wht"], cur["handsize"], less_ok = False)
-    return dict(
-      players = cur["players"] + [name],
-      cards   = { **cur["cards"], name: hand },
-      points  = { **cur["points"], name: 0 },
-      wht     = wht
-    )
+    cards     = { **cur["cards"], name: hand }
+    points    = { **cur["points"], name: 0 }
+    return dict(cards = cards, points = points, wht = wht, **new)
   return None
 
-def start_round(cur, game):
+def leave_game(game, name):
+  cur = current_game(game)
+  if cur["card"]: raise InProgress()      # in progress -> can't leave
+  players = [ p for p in cur["players"] if p != name ]
+  return dict(players = players)
+
+def start_round(cur):
   czar      = NIETZSCHE if cur["czar"] == NIETZSCHE else next_czar(cur)
   cds, blk  = take_random(cur["blk"], 1); card = cds.pop()
   bla, wht  = blanks(black[card]), cur["wht"]
@@ -158,6 +166,7 @@ def start_round(cur, game):
   return res
 
 def play_cards(cur, name, cards, discard = None):
+  if name in cur["answers"]: raise InvalidAction("already answered")
   old = set(cards)
   if discard is not None: old.add(discard)
   hand = cur["cards"][name] - old
@@ -175,8 +184,9 @@ def choose_answer(cur, name, cards):
     card = cur["card"], answers = answer_data(cur)
   ))
   winner = (f(cur["answers"].items()) + [None])[0]
-  if winner == name: raise InvalidVote("vote for own answer")
+  if winner == name: raise InvalidAction("vote for own answer")
   if cur["czar"] == NIETZSCHE:
+    if name in cur["votes"]: raise InvalidAction("already voted")
     votes = { **cur["votes"], name: winner or f(cur["rand_ans"])[0] }
     if len(votes) == len(cur["players"]):
       pts = cur["points"].copy()
@@ -186,6 +196,7 @@ def choose_answer(cur, name, cards):
     else:
       return dict(votes = votes)
   else:
+    if cur["czar"] != name: raise InvalidAction("not the czar")
     if winner:
       pts = { **cur["points"], winner: cur["points"][winner] + 1 }
       msg = "Winner: {}.".format(winner)
@@ -262,6 +273,7 @@ def r_status(game):
 @app.route("/play", methods = ["POST"])
 def r_play():
   form              = request.form
+  action            = form.get("action")
   game, name        = form.get("game")      , form.get("name")
   card, answ        = form.get("card0")     , form.get("answ")
   nietzsche, packs  = form.get("nietzsche") , form.getlist("pack")
@@ -270,17 +282,21 @@ def r_play():
   try:
     if not valid_ident(game): raise InvalidParam("game")
     if not valid_ident(name): raise InvalidParam("name")
-    if form.get("restart"): restart_game(game)
-    if form.get("restart") or form.get("rejoin"):
+    if action in "leave restart rejoin".split():
+      if action == "leave":
+        update_game(game, leave_game(game, name))
+      elif action == "restart":
+        restart_game(game)
       return redirect(url_for(
-        "r_index", game = game, name = name, join = form.get("rejoin")
+        "r_index", join = "yes" if action != "restart" else None,
+        game = game, name = name
       ))
     pks = set(packs) & set(PACKS) if packs else None
     new = init_game(game, name, nietzsche, pks, handsize, randoms)
     if new: update_game(game, new)
     cur = current_game(game)
-    if form.get("start") and cur["card"] is None:
-      update_game(game, start_round(cur, game))
+    if action == "start" and cur["card"] is None:
+      update_game(game, start_round(cur))
     elif card or answ:
       err = InvalidParam("answ" if answ else "card*")
       cds = card = answ.split(",") if answ else [
@@ -301,10 +317,7 @@ def r_play():
     return render_template("late.html", game = game)
   except OutOfCards:
     return game_over(current_game(game), game, name)
-  except InvalidVote as e:
-    return render_template("error.html", error = e.args[0]), 400
-  except InvalidParam as e:
-    error = "invalid parameter: {}".format(e.args[0])
-    return render_template("error.html", error = error), 400
+  except Oops as e:
+    return render_template("error.html", error = e.msg()), 400
 
 # vim: set tw=70 sw=2 sts=2 et fdm=marker :

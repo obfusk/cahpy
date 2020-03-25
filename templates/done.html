@@ -9,7 +9,7 @@
       <input type="hidden" name="game" value="{{ game }}" />
       <input type="hidden" name="name" value="{{ name }}" />
       Game:
-      <a href="/?join&game={{ game }}">{{ game }}</a>
+      <a href="/?join=yes&game={{ game }}">{{ game }}</a>
       <br/>
       Players: {{ players }}
       <br/>
@@ -19,8 +19,8 @@
       <strong>Game over.</strong>
       <br/>
       <br/>
-      <button name="restart" value="restart">Restart!</button>
-      <button name="rejoin" value="rejoin">Rejoin!</button>
+      <button name="action" value="restart">Restart!</button>
+      <button name="action" value="rejoin">Rejoin!</button>
     </form>
     {% include "_footer.html" %}
   </body>
