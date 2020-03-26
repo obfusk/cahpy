@@ -2,7 +2,7 @@
 
     File        : README.md
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-25
+    Date        : 2020-03-26
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -76,9 +76,9 @@ $ export CAHPY_PACKS="unofficial"     # all unofficial packs
 ```
 
 Official packs: `blue`, `fantasy`, `geek`, `green`, `intl`, `red`,
-`science`, `sf`, `uk`, `us`.
+`science`, `sf`, `uk`, `us` (some significant overlap).
 
-Unofficial packs: `uno-anime`, `uno-anime-x1`, `uno-hackers`,
+Unofficial packs: `uno-anime`, `uno-anime-x1`, `uno-f`, `uno-hackers`,
 `uno-malcont`.
 
 ### Password

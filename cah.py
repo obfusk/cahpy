@@ -35,8 +35,10 @@ RANDOMS   = 1
 POLL      = 1000
 NIETZSCHE = -1  # "god is dead" (no czar)
 
-OPACKS    = "blue fantasy geek green intl red science sf uk us".split()
-UPACKS    = [ "uno-" + x for x in "anime anime-x1 hackers malcont".split() ]
+OPACKS, UPACKS = [], []
+for f in sorted(os.listdir("cards")):
+  if not f.endswith("~") and f.startswith("black-"):
+    (UPACKS if "uno-" in f else OPACKS).append(f[6:])
 
 if os.environ.get("CAHPY_PACKS"):
   packsets = dict(all = OPACKS + UPACKS, official = OPACKS,
