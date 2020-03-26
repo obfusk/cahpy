@@ -4,7 +4,7 @@
 
     File        : templates/play.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-25
+    Date        : 2020-03-26
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -57,7 +57,7 @@
     Black card:
     <span class="black">
       {{ black[card]|safe }}
-      <span class="tiny">[{{ pack_for("black", card) }}]</span>
+      <span class="tiny">[{{ pack_for(cur, "black", card) }}]</span>
     </span>
     <br/>
   {% endmacro %}
@@ -72,7 +72,7 @@
       </td><td>
       <label for="card{{ i }}-{{ c }}" class="white">
         {{ white[c]|safe }}
-        <span class="tiny">[{{ pack_for("white", c) }}]</span>
+        <span class="tiny">[{{ pack_for(cur, "white", c) }}]</span>
       </label>
       </td></tr>
     {% endfor %}
@@ -98,7 +98,7 @@
         {% for c in a %}
           <span class="white">
             {{ white[c]|safe }}
-            <span class="tiny">[{{ pack_for("white", c) }}]</span>
+            <span class="tiny">[{{ pack_for(cur, "white", c) }}]</span>
           </span>
         {% endfor %}
       {% if radio %}
@@ -223,7 +223,7 @@
         Nietzsche: {{ "yes" if nietzsche else "no" }};
         Cards in hand: {{ cur["handsize"] }};
         Random answers: {{ cur["randoms"] }};
-        Packs: {{ ", ".join(cur["packs"]) }}.
+        Packs: {{ ", ".join(cur["packs"]|sort) }}.
       </small>
       <br/>
       <br/>

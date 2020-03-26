@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-25
+# Date        : 2020-03-26
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -66,21 +66,22 @@ def esc(s):
 black_cards, white_cards = {}, {}
 for pack in PACKS:
   with open("cards/black-" + pack) as f:
-    for card in f: black_cards.setdefault(esc(card), pack)
+    for card in f: black_cards.setdefault(esc(card), set()).add(pack)
   with open("cards/white-" + pack) as f:
-    for card in f: white_cards.setdefault(esc(card), pack)
+    for card in f: white_cards.setdefault(esc(card), set()).add(pack)
 black, white = list(black_cards), list(white_cards)
 
 def select_cards(packs):
   blk = set( i for i, card in enumerate(black)
-               if black_cards[card] in packs )
+               if black_cards[card] & packs )
   wht = set( i for i, card in enumerate(white)
-               if white_cards[card] in packs )
+               if white_cards[card] & packs )
   return blk, wht
 
-def pack_for(colour, card):
-  return (black_cards[black[card]] if colour == "black" else
-          white_cards[white[card]]).replace("uno-", "")
+def pack_for(cur, colour, card):
+  cs = (black_cards[black[card]] if colour == "black" else
+        white_cards[white[card]])
+  return next(iter(cs & cur["packs"])).replace("uno-", "")
 
 # global state
 games = {}
@@ -117,13 +118,14 @@ def init_game(game, name, nietzsche = False, packs = None,
   if game not in games:
     if handsize is None: handsize = HANDSIZE
     if randoms is None: randoms = RANDOMS
-    blk, wht  = select_cards(set(packs or PACKS))
+    pks       = set(packs or PACKS)
+    blk, wht  = select_cards(pks)
     czar      = NIETZSCHE if nietzsche else None
     games[game] = dict(
       blk = blk, wht = wht, players = [], cards = {}, points = {},
       czar = czar, card = None, blanks = None, rand_ans = [],
       answers = {}, votes = {}, msg = None, prev = None, tick = 0,
-      handsize = handsize, randoms = randoms, packs = sorted(packs)
+      handsize = handsize, randoms = randoms, packs = pks
     )
   cur = current_game(game)
   if name not in cur["players"]:
