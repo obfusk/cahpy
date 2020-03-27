@@ -71,7 +71,7 @@ for pack in PACKS:
     for card in f: black_cards.setdefault(esc(card), set()).add(pack)
   with open("cards/white-" + pack) as f:
     for card in f: white_cards.setdefault(esc(card), set()).add(pack)
-black, white = list(black_cards), list(white_cards)
+black, white = tuple(black_cards), tuple(white_cards)
 
 def select_cards(packs):
   blk = set( i for i, card in enumerate(black)
@@ -221,7 +221,7 @@ def answer_data(cur):
 def data(cur, game, name):
   n, nietzsche  = len(cur["players"]), cur["czar"] == NIETZSCHE
   done          = len(cur["answers"]) == (n if nietzsche else n-1)
-  votes_for     = lambda p: list(cur["votes"].values()).count(p)
+  votes_for     = lambda p: tuple(cur["votes"].values()).count(p)
   return dict(
     cur = cur, game = game, name = name, players = player_data(cur),
     you_czar = cur["czar"] == cur["players"].index(name),
@@ -307,7 +307,7 @@ def r_play():
         form.get("card{}".format(i), "") for i in range(cur["blanks"])
       ]
       if not all( x.isdigit() for x in cds ): raise err
-      cards = list(map(int, cds))
+      cards = tuple(map(int, cds))
       if len(set(cards)) != cur["blanks"]: raise err
       if answ:
         new = choose_answer(cur, name, cards)

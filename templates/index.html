@@ -33,14 +33,14 @@
         <label>
           Game:
           <input name="game" value="{{ game }}" required
-            pattern="[^ ]+"/>
+            pattern="[^ ]+" />
         </label>
       {% endif %}
       <br/>
       <label>
         Name:
         <input name="name" value="{{ name or "" }}" required
-          pattern="[^ ]+"/>
+          pattern="[^ ]+" />
       </label>
       {% if not join %}
         <br/>

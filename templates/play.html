@@ -41,17 +41,9 @@
       <input type="hidden" name="game" value="{{ game }}" />
       <input type="hidden" name="name" value="{{ name }}" />
   {% endmacro %}
-  {% macro refreshbtn() %}
-    <button form="form0">Refresh!</button>
-  {% endmacro %}
   {% macro waitingfor(who) %}
     Waiting for {{ who }}...
     <br/>
-    <noscript>
-      <br/>
-      {{ refreshbtn() }}
-      <br/>
-    </noscript>
   {% endmacro %}
   {% macro blackcard(card) %}
     Black card:
@@ -68,7 +60,7 @@
     {% for c in cur["cards"][name] %}
       <tr><td class="top">
       <input type="radio" id="card{{ i }}-{{ c }}"
-        name="card{{ i }}" value="{{ c }}" class="{{ cls }}">
+        name="card{{ i }}" value="{{ c }}" class="{{ cls }}" />
       </td><td>
       <label for="card{{ i }}-{{ c }}" class="white">
         {{ white[c]|safe }}
@@ -88,7 +80,7 @@
       {% if radio %}
         <input type="radio" id="answ{{ loop.index }}"
           name="answ" value="{{ a|join(",") }}"
-          {% if name == p %}disabled{% endif %}>
+          {% if name == p %}disabled{% endif %} />
         </td><td>
         <label for="answ{{ loop.index }}">
       {% else %}
@@ -156,9 +148,6 @@
           <br/>
           {{ answerlist(prev["answers"], False, True) }}
         {% endif %}
-        <noscript>
-          {{ refreshbtn() }}
-        </noscript>
         <button name="action" value="start">New round!</button>
         <br/>
       <!-- playing -->
@@ -246,6 +235,11 @@
       </script>
     </form>
     {% if waiting %}
+      <noscript>
+        <br/>
+        <hr/>
+        <button form="form0">Refresh!</button>
+      </noscript>
       <script>
         window.onload = () => {
           const tick = {{ tick }}
