@@ -4,7 +4,7 @@
 
     File        : templates/play.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-26
+    Date        : 2020-03-29
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -30,9 +30,11 @@
         padding: 0.2em;
         margin: 1px;
       }
-      .top    { vertical-align: top; }
-      .tiny   { font-size: xx-small; }
-      button  { font-size: large; }
+      .top                { vertical-align: top; }
+      .tiny               { font-size: xx-small; }
+      fieldset, label     { display: inline-block; }
+      fieldset            { background-color: #f6f5f4; }
+      button              { font-size: large; }
     </style>
   </head>
   <!-- macros -->
@@ -54,58 +56,62 @@
     <br/>
   {% endmacro %}
   {% macro whitecards(i, info = "", cls = "radio") %}
-    White card{{ info }}:
+    <fieldset>
+      <legend>White card{{ info }}</legend>
+      <table>
+      {% for c in cur["cards"][name] %}
+        <tr><td class="top">
+        <input type="radio" id="card{{ i }}-{{ c }}"
+          name="card{{ i }}" value="{{ c }}" class="{{ cls }}" />
+        </td><td>
+        <label for="card{{ i }}-{{ c }}" class="white">
+          {{ white[c]|safe }}
+          <span class="tiny">[{{ pack_for(cur, "white", c) }}]</span>
+        </label>
+        </td></tr>
+      {% endfor %}
+      </table>
+    </fieldset>
     <br/>
-    <table>
-    {% for c in cur["cards"][name] %}
-      <tr><td class="top">
-      <input type="radio" id="card{{ i }}-{{ c }}"
-        name="card{{ i }}" value="{{ c }}" class="{{ cls }}" />
-      </td><td>
-      <label for="card{{ i }}-{{ c }}" class="white">
-        {{ white[c]|safe }}
-        <span class="tiny">[{{ pack_for(cur, "white", c) }}]</span>
-      </label>
-      </td></tr>
-    {% endfor %}
-    </table>
     <br/>
   {% endmacro %}
   {% macro answerlist(answers, radio = True, reveal = False) %}
-    Answers:
-    <br/>
-    <table>
-    {% for p, a in answers %}
-      <tr><td class="top">
-      {% if radio %}
-        <input type="radio" id="answ{{ loop.index }}"
-          name="answ" value="{{ a|join(",") }}"
-          {% if name == p %}disabled{% endif %} />
-        </td><td>
-        <label for="answ{{ loop.index }}">
-      {% else %}
-        »
-        </td><td>
-      {% endif %}
-        {% for c in a %}
-          <span class="white">
-            {{ white[c]|safe }}
-            <span class="tiny">[{{ pack_for(cur, "white", c) }}]</span>
-          </span>
-        {% endfor %}
-      {% if radio %}
-        </label>
-      {% endif %}
-      {% if reveal %}
-        </td><td>
-        {% if nietzsche %}
-          ({{ votes_for(p) }})
+    <fieldset>
+      <legend>Answers</legend>
+      <table>
+      {% for p, a in answers %}
+        <tr><td class="top">
+        {% if radio %}
+          <input type="radio" id="answ{{ loop.index }}"
+            name="answ" value="{{ a|join(",") }}"
+            {% if name == p %}disabled{% endif %} />
+          </td><td>
+          <label for="answ{{ loop.index }}">
+        {% else %}
+          »
+          </td><td>
         {% endif %}
-        {{ p if p is string else "" }}
-      {% endif %}
-      </td></tr>
-    {% endfor %}
-    </table>
+          {% for c in a %}
+            <span class="white">
+              {{ white[c]|safe }}
+              <span class="tiny">[{{ pack_for(cur, "white", c) }}]</span>
+            </span>
+          {% endfor %}
+        {% if radio %}
+          </label>
+        {% endif %}
+        {% if reveal %}
+          </td><td>
+          {% if nietzsche %}
+            ({{ votes_for(p) }})
+          {% endif %}
+          {{ p if p is string else "" }}
+        {% endif %}
+        </td></tr>
+      {% endfor %}
+      </table>
+    </fieldset>
+    <br/>
     <br/>
   {% endmacro %}
   <body>
