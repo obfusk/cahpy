@@ -4,7 +4,7 @@
 
     File        : templates/index.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-25
+    Date        : 2020-03-29
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -19,6 +19,8 @@
       <title>cahpy</title>
     {% endif %}
     <style>
+      fieldset, label     { display: inline-block; }
+      fieldset            { background-color: #f6f5f4; }
       button              { font-size: large; }
       input[type=number]  { width: 3em; }
     </style>
@@ -44,31 +46,37 @@
       </label>
       {% if not join %}
         <br/>
-        <label>
-          Say "Nietzsche!" (no czar):
-          <input type="checkbox" name="nietzsche" value="nietzsche"
-            checked />
-        </label>
-        <br/>
-        <label>
-          Cards in hand:
-          <input type="number" name="handsize" value="{{ handsize }}"
-            min="10" max="20" />
-        </label>
-        <br/>
-        <label>
-          Random answers:
-          <input type="number" name="randoms" value="{{ randoms }}"
-            min="0" max="3" />
-        </label>
-        <br/>
-        Packs:
-        {% for p in packs %}
+        <fieldset>
+          <legend>Options</legend>
           <label>
-            <input type="checkbox" name="pack" value="{{ p }}" checked />
-            {{ p }}{% if not loop.last %},{% endif %}
+            <input type="checkbox" name="nietzsche" value="nietzsche"
+              checked />
+            say "Nietzsche!" (no czar)
           </label>
-        {% endfor %}
+          <br/>
+          <label>
+            <input type="number" name="handsize" value="{{ handsize }}"
+              min="10" max="20" />
+            cards in hand
+          </label>
+          <br/>
+          <label>
+            <input type="number" name="randoms" value="{{ randoms }}"
+              min="0" max="3" />
+            random answers
+          </label>
+        </fieldset>
+        <br/>
+        <fieldset>
+          <legend>Packs</legend>
+          {% for p in packs %}
+            <label>
+              <input type="checkbox" name="pack" value="{{ p }}" checked />
+              {{ p }}
+              {% if not loop.last %}&nbsp;{% endif %}
+            </label>
+          {% endfor %}
+        </fieldset>
         <br/>
         <br/>
         <button>Play!</button>
