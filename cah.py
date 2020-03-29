@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-26
+# Date        : 2020-03-29
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -20,7 +20,7 @@
 # * better error messages
 # * use websocket instead of polling
 
-import functools, os, random, secrets, time
+import os, random, secrets, time
 
 import jinja2
 
