@@ -4,7 +4,7 @@
 
     File        : templates/play.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-29
+    Date        : 2020-03-30
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -14,28 +14,6 @@
   <head>
     {% include "_meta.html" %}
     <title>cahpy | {{ game }} | {{ name }}</title>
-    <style>
-      .black {
-        color:            white;
-        background-color: black;
-        border: 1px solid white;
-      }
-      .white {
-        color:            black;
-        background-color: white;
-        border: 1px solid black;
-      }
-      .black, .white {
-        display: inline-block;
-        padding: 0.2em;
-        margin: 1px;
-      }
-      .top                { vertical-align: top; }
-      .tiny               { font-size: xx-small; }
-      fieldset, label     { display: inline-block; }
-      fieldset            { background-color: #f6f5f4; }
-      button              { font-size: large; }
-    </style>
   </head>
   <!-- macros -->
   {% macro formstart(id) %}
