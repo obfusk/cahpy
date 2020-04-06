@@ -17,7 +17,7 @@
 
 import os, time
 
-from flask import jsonify, redirect, url_for
+from flask import jsonify, redirect, request, url_for
 
 POLL = 1000
 
