@@ -4,7 +4,7 @@
 
     File        : templates/play.html
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-03-30
+    Date        : 2020-04-06
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.0.1
@@ -14,6 +14,9 @@
   <head>
     {% include "_meta.html" %}
     <title>cahpy | {{ game }} | {{ name }}</title>
+    <script>
+      const config = {{ config|safe }}
+    </script>
   </head>
   <!-- macros -->
   {% macro formstart(id) %}
@@ -169,18 +172,7 @@
               {{ whitecards(i, " #{}".format(i+1) if multiple else "") }}
             {% endfor %}
             {{ whitecards("d", " to discard (optional)", "") }}
-            <script>
-              document.getElementById("form").onsubmit = e => {
-                const b = {{ cur["blanks"] }}
-                const r = document.getElementsByClassName("radio")
-                const s = (new Set(Array.from(r).filter(x => x.checked)
-                                   .map(x => x.value))).size
-                if (s != b) {
-                  alert(`Please select ${b} (different) card(s).`)
-                  e.preventDefault()
-                }
-              }
-            </script>
+            <script src="/static/radio.js"></script>
             <button>Choose!</button>
             <br/>
           {% endif %}
@@ -207,16 +199,7 @@
       <br/>
       <br/>
       <small>NB: Restart discards the current game.</small>
-      <script>
-        document.getElementsByName("action").forEach(b => {
-          if (b.form.id == "form0") {
-            b.onclick = e => {
-              const q = `Are you sure you want to ${b.value} the game?`
-              if (!window.confirm(q)) { e.preventDefault() }
-            }
-          }
-        })
-      </script>
+      <script src="/static/action.js"></script>
     </form>
     {% if waiting %}
       <noscript>
@@ -225,26 +208,7 @@
         <button form="form0">Refresh!</button>
         <br/>
       </noscript>
-      <script>
-        window.onload = () => {
-          const tick = {{ tick }}
-          const f = () => {
-            const r = new XMLHttpRequest()
-            r.addEventListener("load", e => {
-              if (r.status != 200) { return }
-              const t = JSON.parse(r.responseText).tick
-              if (t > tick) {
-                document.getElementById("form0").submit()
-              } else {
-                setTimeout(f, {{ POLL }})
-              }
-            })
-            r.open("GET", "/status/{{ game }}")
-            r.send()
-          }
-          setTimeout(f, {{ POLL }})
-        }
-      </script>
+      <script src="/static/tick.js"></script>
     {% endif %}
     {% include "_footer.html" %}
   </body>

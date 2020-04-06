@@ -5,7 +5,7 @@
 #
 # File        : cah.py
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-03-29
+# Date        : 2020-04-06
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.0.1
@@ -20,19 +20,19 @@
 # * better error messages
 # * use websocket instead of polling
 
-import os, random, secrets, time
+import json, os, random, secrets
 
 import jinja2
 
-from flask import Flask, jsonify, redirect, request, \
-                  render_template, url_for
+from flask import Flask, redirect, request, render_template, url_for
+
+from obfusk.webgames.common import *
 
 # === logic ===
 
 HANDSIZE  = 13
 RANDOMS   = 1
 
-POLL      = 1000
 NIETZSCHE = -1  # "god is dead" (no czar)
 
 OPACKS, UPACKS = [], []
@@ -48,14 +48,7 @@ if os.environ.get("CAHPY_PACKS"):
 else:
   PACKS = OPACKS
 
-class Oops(RuntimeError):
-  def msg(self): return self.args[0]
-class InProgress(Oops):
-  def __init__(self): super().__init__("in progress")
 class OutOfCards(Oops): pass
-class InvalidAction(Oops): pass
-class InvalidParam(Oops):
-  def msg(self): return "invalid parameter: " + self.args[0]
 
 def blanks(s): return max(1, s.count("____"))
 
@@ -84,22 +77,6 @@ def pack_for(cur, colour, card):
   cs = (black_cards[black[card]] if colour == "black" else
         white_cards[white[card]])
   return next(iter(cs & cur["packs"])).replace("uno-", "")
-
-# global state
-games = {}
-
-def current_game(game):
-  return games[game]
-
-def restart_game(game):
-  del games[game]
-
-def update_game(game, new):
-  cur = current_game(game)
-  cur.update(new, tick = max(cur["tick"] + 1, int(time.time())))
-
-def valid_ident(s):
-  return s and s.isprintable() and all( not c.isspace() for c in s )
 
 def get_random1(x):
   return random.sample(x, 1)[0]
@@ -228,8 +205,10 @@ def data(cur, game, name):
     nietzsche = nietzsche, card = cur["card"],
     answers = answer_data(cur) if done else None,
     votes_for = votes_for, complete = done, msg = cur["msg"],
-    prev = cur["prev"], tick = cur["tick"],
-    pack_for = pack_for, black = black, white = white, POLL = POLL
+    prev = cur["prev"], pack_for = pack_for,
+    black = black, white = white,
+    config = json.dumps(dict(game = game, tick = cur["tick"],
+                             blanks = cur["blanks"], POLL = POLL))
   )
 
 def game_over(cur, game, name):
@@ -239,26 +218,7 @@ def game_over(cur, game, name):
 
 # === http ===
 
-app = Flask(__name__)
-
-if os.environ.get("CAHPY_HTTPS") == "force":
-  @app.before_request
-  def https_required():
-    if request.scheme != "https":
-      return redirect(request.url.replace("http:", "https:"), code = 301)
-  @app.after_request
-  def after_request_func(response):
-    response.headers["Strict-Transport-Security"] = 'max-age=63072000'
-    return response
-
-if os.environ.get("CAHPY_PASSWORD"):
-  PASSWORD = os.environ.get("CAHPY_PASSWORD")
-  @app.before_request
-  def auth_required():
-    auth = request.authorization
-    if not auth or auth.password != PASSWORD:
-      m = "Password required."
-      return m, 401, { "WWW-Authenticate": 'Basic realm="'+m+'"' }
+app = define_common_flask_stuff(Flask(__name__), "cahpy")
 
 @app.route("/")
 def r_index():
@@ -269,10 +229,6 @@ def r_index():
     join = "join" in args, packs = PACKS, handsize = HANDSIZE,
     randoms = RANDOMS
   )
-
-@app.route("/status/<game>")
-def r_status(game):
-  return jsonify(dict(tick = current_game(game)["tick"]))
 
 @app.route("/play", methods = ["POST"])
 def r_play():
