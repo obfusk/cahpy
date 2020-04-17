@@ -7,5 +7,13 @@
   <body>
     <h1>Error</h1>
     <p>{{ error }}</p>
+    {% if game and name %}
+      <hr/>
+      <form method="post">
+        <input type="hidden" name="game" value="{{ game }}" />
+        <input type="hidden" name="name" value="{{ name }}" />
+        <button>Return to game!</button>
+      </form>
+    {% endif %}
   </body>
 </html>
